@@ -1,0 +1,32 @@
+.small-button {
+    margin-left: 2px;
+    margin-right: 2px;
+}
+
+.dropdown-alert {
+    width: 300px;
+}
+
+.alert {}
+
+.alert span {
+    margin-left: 10px;
+}
+
+.alert-type-success {
+    color: #3c763d;
+    background-color: #dff0d8;
+    border-color: #d6e9c6;
+}
+
+.alert-type-danger {
+    color: #a94442;
+    background-color: #f2dede;
+    border-color: #ebccd1;
+}
+
+.alert-type-info {
+    color: #8a6d3b;
+    background-color: #fcf8e3;
+    border-color: #faebcc;
+}

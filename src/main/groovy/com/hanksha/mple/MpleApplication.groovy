@@ -1,12 +1,13 @@
-package com.hanksha.mpwe
+package com.hanksha.mple
 
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 
 @SpringBootApplication
-class MpweApplication {
+class MpleApplication {
 
 	static void main(String[] args) {
-		SpringApplication.run MpweApplication, args
+		SpringApplication.run MpleApplication, args
 	}
+
 }

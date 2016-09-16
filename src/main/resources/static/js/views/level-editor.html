@@ -1,0 +1,85 @@
+<nav-bar></nav-bar>
+<nav class="navbar navbar-inverse" style="margin: 0; border-radius: 0">
+  <div class="container-fluid">
+    <ul class="nav navbar-nav">
+      <li class="dropdown">
+        <a class="dropdown-toggle" data-toggle="dropdown">File</a>
+        <ul class="dropdown-menu dropdown-user">
+        </ul>
+      </li>
+      <li class="dropdown">
+        <a class="dropdown-toggle" data-toggle="dropdown">Edit</a>
+        <ul class="dropdown-menu dropdown-user">
+        </ul>
+      </li>
+      <li class="dropdown">
+        <a class="dropdown-toggle" data-toggle="dropdown">Level</a>
+        <ul class="dropdown-menu dropdown-user">
+        </ul>
+      </li>
+    </ul>
+  </div>
+</nav>
+<div>
+  <div class="container-fluid">
+    <div class="row">
+      <div class="btn-toolbar" role="toolbar">
+        <div class="btn-group btn-group-lg" role="group">
+          <button ng-repeat="tool in editor.tools.listTools()" ng-click="editor.selectTool(tool.name)" ng-class="{active: editor.activeTool.name == tool.name}" type="button"
+                  class="btn btn-lg btn-default" data-toggle="tooltip" data-placement="top" title="{{tool.tooltip}}">
+            <i ng-class="'fa-' + tool.icon" class="fa" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <!--left column level view-->
+      <div class="col-lg-9" style="padding: 0 2px 0 2px ">
+        <div msd-wheel="editor.mouseWheelEvent($event, $delta, $deltaX, $deltaY)" ng-mousemove="editor.updateMouse($event)" ng-mousedrag="editor.mouseEvent($event)" ng-click="editor.mouseEvent($event)" id="level-view" style="max-height: 100%"></div>
+      </div>
+      <!--right column tile set, layers, objects, mini map-->
+      <div class="col-lg-3" style="padding: 0 2px 0 2px">
+        <uib-accordion close-others="false">
+          <div uib-accordion-group class="panel-default" is-open="status.isUpperHeaderOpen">
+            <uib-accordion-heading>
+              x: {{editor.mouse.x}} y: {{editor.mouse.y}} - row: {{editor.cursor.row + 1}} col: {{editor.cursor.col + 1}} - scale: {{editor.viewPort.scale}}
+              <i class="pull-right fa" ng-class="{'fa-chevron-down': status.isUpperHeaderOpen, 'fa-chevron-right': !status.isUpperHeaderOpen}"></i>
+            </uib-accordion-heading>
+            <uib-tabset active="active">
+              <uib-tab index="0" heading="Tiles">
+                <div ng-controller="TilesetCtrl" ng-mousemove="updateCursor($event)" ng-mousedown="mouseDown($event)" ng-mouseup="mouseUp($event)" id="tileset-view"></div>
+              </uib-tab>
+              <uib-tab index="1" heading="Layers">
+                <div id="layer-view">
+                  <ul class="list-group">
+                    <li ng-click="editor.selectLayer($index)" class="list-group-item" ng-class="{'active': $index == editor.selectedLayer}"
+                        ng-repeat="layer in editor.tileMap.layers">{{layer.name}}
+                      <i ng-click="editor.deleteLayer($index)" class="fa fa-times pull-right" aria-hidden="true"></i>
+                      <i ng-click="layer.visible = !layer.visible" class="fa pull-right"
+                         ng-class="{'fa-eye': layer.visible, 'fa-eye-slash': !layer.visible}" aria-hidden="true"></i>
+                    </li>
+                  </ul>
+                </div>
+              </uib-tab>
+              <uib-tab index="2" heading="Objects">
+                <div id="object-view"></div>
+              </uib-tab>
+            </uib-tabset>
+          </div>
+          <div uib-accordion-group class="panel-default" is-open="status.isMiddleHeaderOpen">
+            <uib-accordion-heading>
+              Mini Map
+              <i class="pull-right fa" ng-class="{'fa-chevron-down': status.isMiddleHeaderOpen, 'fa-chevron-right': !status.isMiddleHeaderOpen}"></i>
+            </uib-accordion-heading>
+          </div>
+          <div uib-accordion-group class="panel-default" is-open="status.isLowerHeaderOpen">
+            <uib-accordion-heading>
+              Room
+              <i class="pull-right fa" ng-class="{'fa-chevron-down': status.isLowerHeaderOpen, 'fa-chevron-right': !status.isLowerHeaderOpen}"></i>
+            </uib-accordion-heading>
+          </div>
+        </uib-accordion>
+      </div>
+    </div>
+  </div>
+</div>

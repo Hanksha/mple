@@ -1,0 +1,17 @@
+{
+  "name": "mpwe",
+  "homepage": "https://github.com/Hanksha/mpwe",
+  "authors": [
+    "Hanksha"
+  ],
+  "description": "Mithril Pants World Editor",
+  "main": "",
+  "license": "GNU License v3",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

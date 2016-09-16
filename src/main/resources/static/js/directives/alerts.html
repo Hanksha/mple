@@ -1,0 +1,9 @@
+
+<li class="alert list-group-item" ng-show="alerts.length != 0" ng-repeat="alert in alerts" ng-class="'alert-type-' + alert.type">
+  <button type="button" class="close pull-right" ng-click="closeAlert($index)" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+  <div class="pull-left text-muted">{{alert.timestamp}}</div><br/>
+  <i class="fa"
+     ng-class="{'fa-exclamation-triangle': alert.type == 'danger', 'fa-info-circle': alert.type == 'info', 'fa-check-circle': alert.type == 'success'}"></i>
+  <span>{{alert.msg}}</span>
+</li>
+<li class="alert" ng-show="alerts.length == 0"><span><strong>No Alert</strong></span></li>

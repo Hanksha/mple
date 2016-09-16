@@ -1,0 +1,87 @@
+<nav-bar></nav-bar>
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-lg-12">
+      <div class="panel panel-default">
+        <div class="panel-heading">Project Details</div>
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-lg-12">
+              <table>
+                <tr>
+                  <td><strong>Name</strong>: {{project.name}}</td>
+                </tr>
+                <tr>
+                  <td><strong>Owner</strong>: {{project.owner}}</td>
+                </tr>
+                  <td><strong>Date Created</strong>: {{project.dateCreated}}</td>
+                </tr>
+              </table>
+            </div>
+          </div>
+          <div class="row"><div class="panel"></div></div>
+          <div class="row">
+            <div class="col-lg-6">
+              <div class="panel panel-default">
+                <button type="button" class="btn btn-danger btn-s pull-right small-button" ng-click=""
+                        tooltip-placement="bottom" uib-tooltip="Delete">
+                  <span class="fa fa-trash" aria-hidden="true"></span>
+                </button>
+                <button type="button" class="btn btn-success btn-s pull-right small-button" ng-click="add()"
+                        tooltip-placement="bottom" uib-tooltip="Add">
+                  <span class="fa fa-plus" aria-hidden="true"></span>
+                </button>
+                <div class="panel-heading">Levels</div>
+                <div class="panel-body">
+                  <table class="table table-striped">
+                    <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Date Created</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr ng-repeat="level in levels">
+                      <td>{{level.name}}</td>
+                      <td>{{level.dateCreated}}</td>
+                    </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-6">
+              <div class="panel panel-default">
+                <div class="panel-heading">Commits</div>
+                <div class="panel-body">
+                  <table class="table table-striped">
+                    <thead>
+                    <tr>
+                      <th>Author</th>
+                      <th>Commit</th>
+                      <th>Message</th>
+                      <th>Date</th>
+                      <th>Changes</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr ng-repeat="commit in project.commits">
+                      <td>{{commit.author}}</td>
+                      <td>{{commit.name}}</td>
+                      <td>{{commit.message}}</td>
+                      <td>{{commit.time}}</td>
+                      <td>
+                        <div ng-repeat="name in commit.changedFileNames">{{name}}<br/></div>
+                      </td>
+                    </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

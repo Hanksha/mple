@@ -1,0 +1,45 @@
+<div class="modal-header">
+  <button type="button" class="close" ng-click="cancel()" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+  <h4 class="modal-title">Add a level</h4>
+</div>
+<div class="modal-body">
+  <form>
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" class="form-control" ng-model="level.name">
+      <span class="help-block">The name of the level, must be unique in the project.</span>
+    </div>
+    <div class="form-group">
+      <label>Tileset Name</label>
+      <select ng-model="level.tileset">
+        <option disabled selected value> -- Select a tileset -- </option>
+        <option ng-repeat="tileset in tilesets" value="{{tileset.name}}">{{tileset.name}}</option>
+      </select>
+      <span class="help-block">The tileset to be used.</span>
+    </div>
+    <div class="form-group">
+      <label>Width</label>
+      <input type="number" min="1" class="form-control" ng-model="level.width">
+      <span class="help-block">The width of the level in number of column.</span>
+    </div>
+    <div class="form-group">
+      <label>Height</label>
+      <input type="number" min="1" class="form-control" ng-model="level.height">
+      <span class="help-block">The height of the level in number of row.</span>
+    </div>
+    <div class="form-group">
+      <label>Tile Width</label>
+      <input type="number" min="1" class="form-control" ng-model="level.tileWidth">
+      <span class="help-block">The width of the tiles in pixel.</span>
+    </div>
+    <div class="form-group">
+      <label>Tile Height</label>
+      <input type="number" min="1" class="form-control" ng-model="level.tileHeight">
+      <span class="help-block">The height of the tiles in pixel.</span>
+    </div>
+  </form>
+</div>
+<div class="modal-footer">
+  <button type="button" class="btn btn-default" ng-click="cancel()">Cancel</button>
+  <button type="button" class="btn btn-primary" ng-click="add()">Add</button>
+</div>

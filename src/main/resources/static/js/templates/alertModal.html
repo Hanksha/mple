@@ -1,0 +1,10 @@
+<div class="modal-header" ng-class="'alert-type-' + alert.type">
+  <button type="button" class="close" ng-click="close()" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+  <h4 class="modal-title">
+    <i class="fa" ng-class="{'fa-exclamation-triangle': alert.type == 'danger', 'fa-info-circle': alert.type == 'info', 'fa-check-circle': alert.type == 'success'}"></i>
+    <strong>{{alert.title}}</strong>
+  </h4>
+</div>
+<div class="modal-body">
+  <p>{{alert.msg}}</p>
+</div>
