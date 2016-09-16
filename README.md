@@ -1,3 +1,3 @@
-# MPWE
-Mithril Pants World Editor
+# MPLE
+Mithril Pants Level Editor
  
