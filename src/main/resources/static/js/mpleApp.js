@@ -1,6 +1,6 @@
 (function () {
 
-    var app = angular.module('mpleApp', ['ngRoute', 'ui.bootstrap', 'ngAnimate', 'monospaced.mousewheel', 'cfp.hotkeys']);
+    var app = angular.module('mpleApp', ['ngRoute', 'ui.bootstrap', 'ngAnimate', 'ngSanitize', 'monospaced.mousewheel', 'cfp.hotkeys']);
     
     app.controller('MainCtrl', function ($scope, $location) {
        /* var url = '/marco';
@@ -48,19 +48,50 @@
         $scope.refresh();
     });
 
-    app.controller('ProjectDetailsCtrl', function ($scope, $routeParams, $uibModal, $log, ProjectService, LevelService, TilesetService, AlertService) {
+    app.controller('ProjectDetailsCtrl', function ($scope, $routeParams, $uibModal, $log,
+                                                   ProjectService, LevelService, TilesetService,
+                                                   AlertService, ErrorFormatter) {
 
-        ProjectService.getProject($routeParams.name).success(function (data) {
-            $scope.project = data;
-        });
 
-        LevelService.listLevels($routeParams.name).success(function (data) {
-            $scope.levels = data;
-        });
+        $scope.selectedLevel = null;
 
-        TilesetService.listTilesets().success(function (data) {
-            $scope.tilesets = data;
-        });
+        $scope.selectLevel = function (level) {
+          $scope.selectedLevel = level;
+        };
+
+        $scope.refresh = function () {
+            ProjectService.getProject($routeParams.name).success(function (data) {
+                $scope.project = data;
+            });
+
+            LevelService.listLevels($routeParams.name).success(function (data) {
+                $scope.levels = data;
+            });
+
+            TilesetService.listTilesets().success(function (data) {
+                $scope.tilesets = data;
+            });
+        };
+
+        $scope.refresh();
+
+        $scope.deleteLevel = function () {
+
+            if($scope.selectedLevel == null)
+                return;
+
+            AlertService.addConfirmationAlert('Delete level', 'Are you sure you want to delete \'' +  $scope.selectedLevel.name + '\'?',
+                function () {
+                    LevelService.deleteLevel($routeParams.name, $scope.selectedLevel.name)
+                        .success(function (data) {
+                            AlertService.addPopUpAlert('Success', data, 'success');
+                            $scope.refresh();
+                        })
+                        .error(function (data) {
+                            AlertService.addPopUpAlert('Error', data, 'danger');
+                        })
+                }, function () {});
+        };
 
         $scope.add = function () {
             $uibModal.open({
@@ -76,9 +107,10 @@
                         LevelService.createLevel($routeParams.name, $scope.level)
                             .success(function (data) {
                                 AlertService.addPopUpAlert('Success', data, 'success');
+                                $scope.refresh();
                             })
                             .error(function (data) {
-                                AlertService.addPopUpAlert('Error', data, 'danger');
+                                AlertService.addPopUpAlert('Error: could not create the level', ErrorFormatter.format(data), 'danger');
                             });
                         $uibModalInstance.close();
                     }
@@ -287,7 +319,8 @@
         return {
             getLevel: getLevel,
             listLevels: listLevels,
-            createLevel: createLevel
+            createLevel: createLevel,
+            deleteLevel: deleteLevel
         };
 
         function getLevel(id) {
@@ -295,11 +328,15 @@
         }
         
         function listLevels(projectName) {
-            return $http.get('/api/projects/' + projectName + '/levels')
+            return $http.get('/api/projects/' + projectName + '/levels');
         }
 
         function createLevel(projectName, body) {
-            return $http.post('/api/projects/' + projectName + '/levels', body)
+            return $http.post('/api/projects/' + projectName + '/levels', body);
+        }
+
+        function deleteLevel(projectName, levelName) {
+            return $http.delete('/api/projects/' + projectName + '/levels/' + levelName);
         }
     });
 
@@ -317,6 +354,7 @@
         function listTilesets() {
             return $http.get('/api/tilesets');
         }
+
     });
 
     app.factory('AlertService', function ($http, $uibModal) {
@@ -326,6 +364,7 @@
         return {
             addAlert: addAlert,
             addPopUpAlert: addPopUpAlert,
+            addConfirmationAlert: addConfirmationAlert,
             getAlerts: getAlerts,
             closeAlert: closeAlert
         };
@@ -357,6 +396,29 @@
             });
         }
 
+        function addConfirmationAlert(title, message, okCallback, cancelCallback) {
+            $uibModal.open({
+                templateUrl: 'js/templates/confirmationModal.html',
+                size: 'sm',
+                controller: function ($scope, $uibModalInstance) {
+                    $scope.alert = {
+                        title: title,
+                        msg: message
+                    };
+
+                    $scope.cancel = function () {
+                        cancelCallback.call();
+                        $uibModalInstance.dismiss();
+                    };
+
+                    $scope.ok = function () {
+                        okCallback.call();
+                        $uibModalInstance.close()
+                    };
+                }
+            });
+        }
+
         function getAlerts() {
             return alerts;
         }
@@ -366,10 +428,35 @@
         }
 
     });
+
+    app.factory('ErrorFormatter', function () {
+
+        return {
+          format: format
+        };
+
+        function format(errorMsg) {
+
+            var message = '';
+
+            if(errorMsg.hasOwnProperty('errors')) {
+                message = '<ul>';
+                angular.forEach(errorMsg.errors, function (value) {
+                    message += ('<li>' + value.field + ' ' + value.defaultMessage + '</li>');
+                });
+                message += '</ul>';
+            }
+            else
+                message = errorMsg;
+
+            return message;
+        }
+
+    });
     
     app.factory('Tools', function () {
 
-        var tools = {};name
+        var tools = {};
 
         return {
             addTool: addTool,

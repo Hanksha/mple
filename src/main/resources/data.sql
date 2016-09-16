@@ -9,6 +9,3 @@ INSERT INTO tilesets VALUES
 
 INSERT INTO projects VALUES
   (default, 'demo-project', CURRENT_DATE(), 'admin');
-
-INSERT INTO levels VALUES
-  (1, default, 'demo-level', CURRENT_DATE());

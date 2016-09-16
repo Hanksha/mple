@@ -3,6 +3,7 @@ package com.hanksha.mple.controller
 import com.hanksha.mple.data.model.CreateLevelRequestContent
 import com.hanksha.mple.data.model.LevelMeta
 import com.hanksha.mple.exception.LevelAlreadyExistsException
+import com.hanksha.mple.exception.LevelNotFoundException
 import com.hanksha.mple.exception.ProjectNotFoundException
 import com.hanksha.mple.service.LevelManager
 import groovy.json.JsonOutput
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -47,6 +49,17 @@ class LevelController {
         } catch(ProjectNotFoundException ex) {
             return new ResponseEntity(HttpStatus.NOT_FOUND)
         }
+    }
+
+    @DeleteMapping('/{name}')
+    ResponseEntity deleteLevel(@PathVariable String projectName, @PathVariable String name) {
+        try {
+            levelManager.deleteLevel(projectName, name)
+        } catch(LevelNotFoundException ex) {
+            return new ResponseEntity(JsonOutput.toJson(ex.message), HttpStatus.NOT_FOUND)
+        }
+
+        ResponseEntity.ok(JsonOutput.toJson('Level deleted'))
     }
 
     @SuppressWarnings("GroovyAssignabilityCheck")

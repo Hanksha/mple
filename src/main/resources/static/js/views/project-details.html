@@ -23,7 +23,7 @@
           <div class="row">
             <div class="col-lg-6">
               <div class="panel panel-default">
-                <button type="button" class="btn btn-danger btn-s pull-right small-button" ng-click=""
+                <button type="button" class="btn btn-danger btn-s pull-right small-button" ng-click="deleteLevel()"
                         tooltip-placement="bottom" uib-tooltip="Delete">
                   <span class="fa fa-trash" aria-hidden="true"></span>
                 </button>
@@ -41,7 +41,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr ng-repeat="level in levels">
+                    <tr ng-repeat="level in levels" ng-click="selectLevel(level)" ng-class="{info: selectedLevel.name == level.name}">
                       <td>{{level.name}}</td>
                       <td>{{level.dateCreated}}</td>
                     </tr>

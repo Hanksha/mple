@@ -15,6 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 
+import java.nio.file.Files
+
 @Service
 class LevelManager {
 
@@ -76,6 +78,33 @@ class LevelManager {
         git.add().addFilepattern(level.name + '.json').call()
         // commit file
         git.commit().setAuthor(author, '').setMessage("Added level $levelName").call()
+        git.close()
+    }
+
+    void deleteLevel(String projectName, String levelName) {
+        Project project = projectRepo.findOne(projectName)
+
+        if(!project)
+            throw new ProjectNotFoundException(projectName)
+
+        LevelMeta level = levelRepo.findOne(project.id, levelName)
+
+        if(!level)
+            throw new LevelNotFoundException(projectName, levelName)
+
+        // delete from database
+        levelRepo.delete(level.id)
+
+        // delete from folder
+        File folder = FileUtils.getFile(new File(ProjectManager.ROOT_PROJECT_FOLDER), projectName)
+        File file = FileUtils.getFile(folder, levelName + '.json')
+        file.delete()
+
+        // commit
+        Git git = Git.open(folder)
+        String author = SecurityContextHolder.getContext().getAuthentication().getName()
+        git.rm().addFilepattern(levelName + '.json').call()
+        git.commit().setAuthor(author, '').setMessage("Deleted ${levelName}.json").call()
         git.close()
     }
 
