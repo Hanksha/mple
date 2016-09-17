@@ -1,6 +1,6 @@
 (function () {
 
-    var app = angular.module('mpleApp', ['ngRoute', 'ui.bootstrap', 'ngAnimate', 'ngSanitize', 'monospaced.mousewheel', 'cfp.hotkeys']);
+    var app = angular.module('mpleApp', ['ngRoute', 'ui.bootstrap', 'ngAnimate', 'ngCookies', 'ngSanitize', 'monospaced.mousewheel', 'cfp.hotkeys']);
     
     app.controller('MainCtrl', function ($scope, $location) {
        /* var url = '/marco';
@@ -30,6 +30,15 @@
 
     app.controller('HomeCtrl', function ($interval) {
         
+    });
+
+    app.controller('LoginCtrl', function ($scope, AuthService) {
+        $scope.credentials = {};
+
+        $scope.login = function () {
+            AuthService.authenticate($scope.credentials.username, $scope.credentials.password);
+            $scope.credentials = {};
+        };
     });
 
     app.controller('ProjectsCtrl', function ($scope, $log, $uibModal, ProjectService, AlertService) {
@@ -569,10 +578,54 @@
 
     });
 
-    app.directive('navBar', function () {
+    app.factory('AuthService', function ($cookies, $http, AlertService, $location) {
+        return {
+            isAuthenticated: isAuthenticated,
+            authenticate: authenticate,
+            logout: logout
+        };
+        
+        function isAuthenticated() {
+            return $cookies.get('authenticated') == 'true';
+        }
+
+        function authenticate(username, password) {
+            $http.post(
+                '/login',
+                'username='+username+'&'+'password='+password,
+                {headers: {'Content-Type': 'application/x-www-form-urlencoded'}})
+                .success(function () {
+                    $cookies.put('authenticated', 'true');
+                    AlertService.addPopUpAlert('Login successful', 'Welcome.', 'success');
+                    $location.path('/');
+                })
+                .error(function () {
+                    AlertService.addPopUpAlert('Login failed', 'Username or password incorrect.', 'info');
+                });
+        }
+        
+        function logout() {
+            $http.post('/logout', '')
+                .success(function () {
+                    $cookies.put('authenticated', 'false');
+                    AlertService.addPopUpAlert('Logout successful', 'Welcome.', 'success');
+                    $location.path('/login');
+                })
+                .error(function () {
+                    AlertService.addPopUpAlert('Logout failed', 'Could not logout', 'info');
+                });
+        }
+    });
+
+    app.directive('navBar', function (AuthService) {
         return {
             restrict: 'E',
-            templateUrl: 'js/directives/nav-bar.html'
+            templateUrl: 'js/directives/nav-bar.html',
+            link: function (scope) {
+                scope.logout = function () {
+                    AuthService.logout();
+                };
+            }
         };
     });
 
@@ -622,12 +675,33 @@
         };
     }]);
 
-    app.config(function($routeProvider) {
+    app.config(function($routeProvider, $httpProvider) {
+
+        $httpProvider.interceptors.push(function($q, $cookies, $location) {
+            return {
+                'request': function(config) {
+                    return config;
+                },
+
+                'response': function(response) {
+                    if(response.status == 401) {
+                        $cookies.put('authenticated', 'false');
+                        $location.path('/login')
+                    }
+
+                    return response;
+                }
+            };
+        });
 
         $routeProvider
             .when('/', {
                 templateUrl: 'js/views/home.html',
                 controller: 'HomeCtrl'
+            })
+            .when('/login', {
+                templateUrl: 'js/views/login.html',
+                controller: 'LoginCtrl'
             })
             .when('/projects', {
                 templateUrl: 'js/views/projects.html',
@@ -644,5 +718,14 @@
             })
             .otherwise({redirectTo: '/'});
 
+    });
+
+    app.run(function($rootScope, $location, AuthService) {
+        $rootScope.$on( "$routeChangeStart", function(event, next, current) {
+            if(!AuthService.isAuthenticated())
+                $location.path('/login');
+            else if(next.templateUrl == 'js/views/login.html')
+                $location.path('/');
+        });
     });
 })();

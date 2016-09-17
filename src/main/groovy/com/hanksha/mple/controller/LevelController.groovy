@@ -1,6 +1,6 @@
 package com.hanksha.mple.controller
 
-import com.hanksha.mple.data.model.CreateLevelRequestContent
+import com.hanksha.mple.data.model.CreateLevelRequest
 import com.hanksha.mple.data.model.LevelMeta
 import com.hanksha.mple.exception.LevelAlreadyExistsException
 import com.hanksha.mple.exception.LevelNotFoundException
@@ -64,7 +64,7 @@ class LevelController {
 
     @SuppressWarnings("GroovyAssignabilityCheck")
     @RequestMapping(value = '', method = RequestMethod.POST)
-    ResponseEntity createLevel(@PathVariable String projectName, @Valid @RequestBody CreateLevelRequestContent content) {
+    ResponseEntity createLevel(@PathVariable String projectName, @Valid @RequestBody CreateLevelRequest content) {
         try {
              levelManager.createLevel(
                     projectName, content.name, content.tileset,

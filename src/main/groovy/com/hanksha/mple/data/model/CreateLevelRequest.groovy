@@ -3,10 +3,7 @@ package com.hanksha.mple.data.model
 import javax.validation.constraints.Min
 import javax.validation.constraints.NotNull
 
-/**
- * Created by vivien on 9/16/16.
- */
-class CreateLevelRequestContent {
+class CreateLevelRequest {
 
     @NotNull
     String name
