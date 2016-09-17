@@ -4,6 +4,7 @@ import com.hanksha.mple.data.ProjectRepository
 import com.hanksha.mple.data.model.Project
 import com.hanksha.mple.exception.ProjectAlreadyExistsException
 import com.hanksha.mple.exception.ProjectNotFoundException
+import com.hanksha.mple.exception.ProjectPermissionDeniedException
 import com.hanksha.mple.service.ProjectManager
 import groovy.json.JsonOutput
 import org.slf4j.Logger
@@ -66,6 +67,8 @@ class ProjectController {
             projectManager.deleteProject(name)
         } catch(ProjectNotFoundException ex) {
             return new ResponseEntity(JsonOutput.toJson(ex.message), HttpStatus.NOT_FOUND)
+        } catch(ProjectPermissionDeniedException ex) {
+            return new ResponseEntity(JsonOutput.toJson(ex.message), HttpStatus.FORBIDDEN)
         }
 
         ResponseEntity.ok(JsonOutput.toJson('Project deleted'))

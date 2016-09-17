@@ -679,11 +679,7 @@
 
         $httpProvider.interceptors.push(function($q, $cookies, $location) {
             return {
-                'request': function(config) {
-                    return config;
-                },
-
-                'response': function(response) {
+                'responseError': function(response) {
                     if(response.status == 401) {
                         $cookies.put('authenticated', 'false');
                         $location.path('/login')

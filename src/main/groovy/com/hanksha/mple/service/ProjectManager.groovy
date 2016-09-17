@@ -1,23 +1,19 @@
 package com.hanksha.mple.service
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.hanksha.mple.data.ProjectRepository
+import com.hanksha.mple.data.UserRoleRepository
 import com.hanksha.mple.data.model.Commit
-import com.hanksha.mple.data.model.Level
 import com.hanksha.mple.data.model.Project
 import com.hanksha.mple.exception.ProjectAlreadyExistsException
 import com.hanksha.mple.exception.ProjectNotFoundException
+import com.hanksha.mple.exception.ProjectPermissionDeniedException
 import org.apache.commons.io.FileUtils
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.diff.DiffEntry
 import org.eclipse.jgit.lib.ObjectId
-import org.eclipse.jgit.lib.ObjectLoader
 import org.eclipse.jgit.lib.ObjectReader
-import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.revwalk.RevCommit
 import org.eclipse.jgit.treewalk.CanonicalTreeParser
-import org.eclipse.jgit.treewalk.TreeWalk
-import org.eclipse.jgit.treewalk.filter.PathFilter
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.io.ResourceLoader
 import org.springframework.security.core.context.SecurityContextHolder
@@ -27,8 +23,6 @@ import javax.annotation.PostConstruct
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.time.LocalDate
-import java.time.LocalDateTime
 
 @Service
 class ProjectManager {
@@ -40,6 +34,9 @@ class ProjectManager {
 
     @Autowired
     ProjectRepository projectRepo
+
+    @Autowired
+    UserRoleRepository userRoleRepo
 
     @PostConstruct
     void init() {
@@ -129,9 +126,18 @@ class ProjectManager {
 
     void deleteProject(String name) {
 
-        if(!projectRepo.findOne(name))
+        Project project = projectRepo.findOne(name)
+
+        if(!project)
             throw new ProjectNotFoundException(name)
 
+        // verify permission
+        String username = SecurityContextHolder.context.authentication.name
+        List<String> roles = userRoleRepo.findRoles(username)
+
+        // only an admin or project owner can delete a project
+        if(project.owner != username && !roles.contains('ROLE_ADMIN'))
+            throw new ProjectPermissionDeniedException(name)
 
         // delete project from database
         projectRepo.delete(name)
