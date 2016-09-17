@@ -32,7 +32,7 @@
         
     });
 
-    app.controller('ProjectsCtrl', function ($scope, $log, ProjectService) {
+    app.controller('ProjectsCtrl', function ($scope, $log, $uibModal, ProjectService, AlertService) {
         $scope.selectProject = function (project) {
            $scope.selectedProject = project;
         };
@@ -45,6 +45,56 @@
             });
         };
 
+        $scope.addProject = function () {
+            $uibModal.open({
+                templateUrl: 'js/templates/createProjectModal.html',
+                size: 'sm',
+                controller: function ($scope, $uibModalInstance) {
+                    $scope.projectName = '';
+
+                    $scope.cancel = function () {
+                        $uibModalInstance.dismiss();
+                    };
+
+                    $scope.add = function () {
+                        ProjectService.createProject($scope.projectName)
+                            .success(function (data) {
+                                AlertService.addPopUpAlert('Success', data, 'success');
+                                $scope.refresh();
+                            })
+                            .error(function (data) {
+                                AlertService.addPopUpAlert('Error', data, 'danger');
+                            });
+                        $uibModalInstance.close();
+                    }
+
+                },
+                scope: $scope
+            });
+        };
+
+        $scope.deleteProject = function () {
+
+            if($scope.selectedProject == null)
+                return;
+
+            AlertService.addConfirmationAlert(
+                'Delete Project',
+                'Are you sure you want to delete project \'' + $scope.selectedProject.name +
+                '\'? This cannot be undone and all the levels of the project will be lost.',
+                function () {
+                    ProjectService.deleteProject($scope.selectedProject.name)
+                        .success(function (data) {
+                            $scope.refresh();
+                            AlertService.addPopUpAlert('Success', data, 'success');
+                        })
+                        .error(function (data) {
+                            AlertService.addPopUpAlert('Error', data, 'danger');
+                        })
+                },
+                function () {});
+        };
+        
         $scope.refresh();
     });
 
@@ -303,7 +353,9 @@
     app.factory('ProjectService', function ($http) {
         return {
             getProject: getProject,
-            listProjects: listProjects
+            listProjects: listProjects,
+            createProject: createProject,
+            deleteProject: deleteProject
         };
 
         function getProject(name) {
@@ -311,7 +363,15 @@
         }
 
         function listProjects() {
-            return $http.get('/api/projects')
+            return $http.get('/api/projects');
+        }
+
+        function createProject(name) {
+            return $http.post('/api/projects', name);
+        }
+
+        function deleteProject(name) {
+            return $http.delete('/api/projects/' + name)
         }
     });
     

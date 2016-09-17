@@ -15,8 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 
-import java.nio.file.Files
-
 @Service
 class LevelManager {
 
@@ -72,7 +70,7 @@ class LevelManager {
 
         objectMapper.writeValue(FileUtils.getFile(folder, level.name + '.json'), level)
 
-        String author = SecurityContextHolder.getContext().getAuthentication().getName()
+        String author = SecurityContextHolder.context.authentication.name
 
         // stage level file
         git.add().addFilepattern(level.name + '.json').call()
@@ -102,7 +100,7 @@ class LevelManager {
 
         // commit
         Git git = Git.open(folder)
-        String author = SecurityContextHolder.getContext().getAuthentication().getName()
+        String author = SecurityContextHolder.context.authentication.name
         git.rm().addFilepattern(levelName + '.json').call()
         git.commit().setAuthor(author, '').setMessage("Deleted ${levelName}.json").call()
         git.close()

@@ -5,6 +5,7 @@ import com.hanksha.mple.data.model.Project
 import com.hanksha.mple.exception.ProjectAlreadyExistsException
 import com.hanksha.mple.exception.ProjectNotFoundException
 import com.hanksha.mple.service.ProjectManager
+import groovy.json.JsonOutput
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -42,20 +43,20 @@ class ProjectController {
 
             return new ResponseEntity(project, HttpStatus.OK)
         } catch(ProjectNotFoundException ex) {
-            return new ResponseEntity(ex.message, HttpStatus.NOT_FOUND)
+            return new ResponseEntity(JsonOutput.toJson(ex.message), HttpStatus.NOT_FOUND)
         }
     }
 
     @RequestMapping(value = '', method = RequestMethod.POST)
-    ResponseEntity createProject(@RequestBody String name, Principal principal) {
+    ResponseEntity createProject(@RequestBody String name) {
 
         try {
-            projectManager.createProject(name, principal.getName())
+            projectManager.createProject(name)
         } catch(ProjectAlreadyExistsException ex) {
-            return new ResponseEntity(ex.message, HttpStatus.CONFLICT)
+            return new ResponseEntity(JsonOutput.toJson(ex.message), HttpStatus.CONFLICT)
         }
 
-        ResponseEntity.ok('Project created')
+        ResponseEntity.ok(JsonOutput.toJson('Project created'))
     }
 
     @RequestMapping(value = '/{name}', method = RequestMethod.DELETE)
@@ -64,10 +65,10 @@ class ProjectController {
         try {
             projectManager.deleteProject(name)
         } catch(ProjectNotFoundException ex) {
-            return new ResponseEntity(ex.message, HttpStatus.NOT_FOUND)
+            return new ResponseEntity(JsonOutput.toJson(ex.message), HttpStatus.NOT_FOUND)
         }
 
-        ResponseEntity.ok('Project deleted')
+        ResponseEntity.ok(JsonOutput.toJson('Project deleted'))
     }
 
 }

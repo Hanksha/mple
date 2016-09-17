@@ -20,6 +20,7 @@ import org.eclipse.jgit.treewalk.TreeWalk
 import org.eclipse.jgit.treewalk.filter.PathFilter
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.io.ResourceLoader
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 
 import javax.annotation.PostConstruct
@@ -99,11 +100,13 @@ class ProjectManager {
         project
     }
 
-    void createProject(String name, String owner) {
+    void createProject(String name) {
 
         // checks if already
         if(projectRepo.findOne(name))
             throw new ProjectAlreadyExistsException(name)
+
+        String owner = SecurityContextHolder.context.authentication.name
 
         // add to database
         projectRepo.save(new Project(name: name, dateCreated: new Date(), owner: owner))
@@ -116,6 +119,12 @@ class ProjectManager {
 
         // create git repository
         Git.init().setDirectory(FileUtils.getFile(new File(ROOT_PROJECT_FOLDER), name)).call().close()
+
+        Git git = Git.open(FileUtils.getFile(new File(ROOT_PROJECT_FOLDER), name))
+
+        git.add().addFilepattern('.').call()
+        git.commit().setAuthor(owner, '').setMessage('Initial commit').call()
+        git.close()
     }
 
     void deleteProject(String name) {
