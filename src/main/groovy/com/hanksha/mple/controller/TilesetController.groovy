@@ -2,67 +2,70 @@ package com.hanksha.mple.controller
 
 import com.hanksha.mple.data.TilesetRepository
 import com.hanksha.mple.data.model.Tileset
+import com.hanksha.mple.exception.TilesetAlreadyExistsException
+import com.hanksha.mple.exception.TilesetNotFoundException
+import com.hanksha.mple.service.TilesetManager
+import groovy.json.JsonOutput
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.core.io.ResourceLoader
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestMethod
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import org.springframework.web.multipart.MultipartFile
 
-import javax.annotation.PostConstruct
-import java.nio.file.Files
-import java.nio.file.Paths
+import javax.validation.Valid
 
-/**
- * Created by vivien on 8/28/16.
- */
 @RestController
 @RequestMapping('/api/tilesets')
 class TilesetController {
 
-    public static final String ROOT_FOLDER = 'storage/tilesets'
-
     @Autowired
-    ResourceLoader resourceLoader
+    TilesetManager tilesetManager
 
     @Autowired
     TilesetRepository tilesetRepo
 
-    @PostConstruct
-    void init() {
-        if(!Files.exists(Paths.get(ROOT_FOLDER)))
-            Files.createDirectory(Paths.get(ROOT_FOLDER))
-    }
-
     @GetMapping('')
-    ResponseEntity listTileset() {
+    ResponseEntity listTilesets() {
         List<Tileset> tilesetList = tilesetRepo.findAll()
 
         new ResponseEntity(tilesetList, HttpStatus.OK)
     }
 
-    @RequestMapping(value = '/{name}', method = RequestMethod.GET)
-    ResponseEntity tileset(@PathVariable String name) {
-        Tileset tileset = tilesetRepo.findOne(name)
-
-        String imgSrc = resourceLoader.getResource('file:' + Paths.get(ROOT_FOLDER, tileset.fileName).toString()).file.bytes.encodeBase64()
-
-        new ResponseEntity([tileset: tileset, img: imgSrc], HttpStatus.OK)
+    @GetMapping('/{name}')
+    ResponseEntity getTileset(@PathVariable String name) {
+        try {
+            Tileset tileset = tilesetManager.getTileset(name)
+            new ResponseEntity(tileset, HttpStatus.OK)
+        } catch(TilesetNotFoundException ex) {
+            return new ResponseEntity(JsonOutput.toJson(ex.message), HttpStatus.NOT_FOUND)
+        }
     }
 
-    @RequestMapping(value = '', method = RequestMethod.POST)
-    ResponseEntity uploadFile(@RequestParam MultipartFile file) {
-        if(!file.isEmpty()) {
-            Files.copy(file.getInputStream(), Paths.get(ROOT_FOLDER, file.getOriginalFilename()));
-            new ResponseEntity(HttpStatus.OK)
+    @PostMapping('')
+    ResponseEntity createTileset(@Valid @RequestBody Tileset tileset) {
+        try {
+            tilesetManager.createTileset(tileset)
+        } catch(TilesetAlreadyExistsException ex) {
+            return new ResponseEntity(JsonOutput.toJson(ex.message), HttpStatus.CONFLICT)
         }
-        else
-            new ResponseEntity(HttpStatus.BAD_REQUEST)
+
+        new ResponseEntity(JsonOutput.toJson('Tileset created'), HttpStatus.OK)
+    }
+
+    @DeleteMapping('/{name}')
+    ResponseEntity deleteTileset(@PathVariable String name) {
+        try {
+            tilesetManager.deleteTileset(name)
+        } catch(TilesetNotFoundException ex) {
+            return new ResponseEntity(JsonOutput.toJson(ex.message), HttpStatus.NOT_FOUND)
+        }
+
+        new ResponseEntity(JsonOutput.toJson('Tileset deleted'), HttpStatus.OK)
     }
 
 }

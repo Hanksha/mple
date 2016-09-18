@@ -22,13 +22,13 @@ class JdbcTilesetRepository implements TilesetRepository {
 
     List<Tileset> findAll() {
         jdbc.query('SELECT id, name, date_created, spacing, offset_x, offset_y, ' +
-                    'tile_width, tile_height, num_row, num_col, file_name FROM tilesets', new TilesetRowMapper())
+                    'tile_width, tile_height, num_row, num_col FROM tilesets', new TilesetRowMapper())
     }
 
     Tileset findOne(int id) {
         try {
             jdbc.queryForObject('SELECT id, name, date_created, spacing, offset_x, offset_y, ' +
-                    'tile_width, tile_height, num_row, num_col, file_name FROM tilesets WHERE id = ?',
+                    'tile_width, tile_height, num_row, num_col FROM tilesets WHERE id = ?',
                     new TilesetRowMapper(), id)
         } catch(EmptyResultDataAccessException e) { }
     }
@@ -36,14 +36,13 @@ class JdbcTilesetRepository implements TilesetRepository {
     Tileset findOne(String name) {
         try {
             jdbc.queryForObject('SELECT id, name, date_created, spacing, offset_x, offset_y, ' +
-                    'tile_width, tile_height, num_row, num_col, file_name FROM tilesets WHERE name = ?',
+                    'tile_width, tile_height, num_row, num_col FROM tilesets WHERE name = ?',
                     new TilesetRowMapper(), name)
         } catch(EmptyResultDataAccessException e) { }
     }
 
     void save(Tileset tileset) {
-        jdbc.update('INSERT INTO tilsets VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                tileset.id,
+        jdbc.update('INSERT INTO tilesets VALUES(default, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 tileset.name,
                 new java.sql.Date(tileset.dateCreated.getTime()),
                 tileset.spacing,
@@ -52,17 +51,27 @@ class JdbcTilesetRepository implements TilesetRepository {
                 tileset.tileWidth,
                 tileset.tileHeight,
                 tileset.numRow,
-                tileset.numCol,
-                tileset.fileName
+                tileset.numCol
             )
     }
 
     void update(Tileset tileset) {
-
+        jdbc.update('UPDATE tilesets ' +
+                    'SET name = ?, spacing = ?, offset_x = ?, offset_y = ?, ' +
+                    'tile_width = ?, tile_height = ?, num_row = ?, num_col = ? WHERE id = ?',
+                tileset.name,
+                tileset.spacing,
+                tileset.offsetX,
+                tileset.offsetY,
+                tileset.tileWidth,
+                tileset.tileHeight,
+                tileset.numRow,
+                tileset.numCol,
+                tileset.id)
     }
 
     void delete(int id) {
-
+        jdbc.update('DELETE FROM tilesets WHERE id = ?', id)
     }
 
     private class TilesetRowMapper implements RowMapper<Tileset> {
@@ -78,8 +87,7 @@ class JdbcTilesetRepository implements TilesetRepository {
                     tileWidth: rs.getInt('tile_width'),
                     tileHeight: rs.getInt('tile_height'),
                     numRow: rs.getInt('num_row'),
-                    numCol: rs.getInt('num_col'),
-                    fileName: rs.getString('file_name')
+                    numCol: rs.getInt('num_col')
             )
         }
     }

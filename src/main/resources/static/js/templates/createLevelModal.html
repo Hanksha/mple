@@ -11,7 +11,7 @@
     </div>
     <div class="form-group">
       <label>Tileset Name</label>
-      <select ng-model="level.tileset">
+      <select class="form-control" ng-model="level.tileset">
         <option disabled selected value> -- Select a tileset -- </option>
         <option ng-repeat="tileset in tilesets" value="{{tileset.name}}">{{tileset.name}}</option>
       </select>

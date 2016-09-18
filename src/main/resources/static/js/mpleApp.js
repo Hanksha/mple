@@ -1,6 +1,8 @@
 (function () {
 
-    var app = angular.module('mpleApp', ['ngRoute', 'ui.bootstrap', 'ngAnimate', 'ngCookies', 'ngSanitize', 'monospaced.mousewheel', 'cfp.hotkeys']);
+    var app = angular.module('mpleApp', [
+        'ngRoute', 'ui.bootstrap', 'ngAnimate', 'ngFileUpload', 'base64',
+        'ngCookies', 'ngSanitize', 'monospaced.mousewheel', 'cfp.hotkeys']);
     
     app.controller('MainCtrl', function ($scope, $location) {
        /* var url = '/marco';
@@ -173,9 +175,97 @@
                             });
                         $uibModalInstance.close();
                     }
-                    
+
                 },
                 scope: $scope
+            });
+        };
+    });
+
+    app.controller('TilesetDetailsCtrl', function ($scope, $uibModal, $log, TilesetService,
+                                                   ErrorFormatter, AlertService) {
+
+        $scope.refresh = function () {
+            TilesetService.listTilesets().success(function (data) {
+               $scope.tilesetList = data;
+            });
+        };
+
+        $scope.refresh();
+
+        $scope.selectTileset = function (tileset) {
+          $scope.selectedTileset = tileset;
+        };
+
+        $scope.deleteTileset = function () {
+            AlertService.addConfirmationAlert(
+                'Delete tileset',
+                'Are you sure you want to delete tileset \'' + $scope.selectedTileset.name +
+                '\'? This action cannot be undone and it can affect dependent levels.',
+                function () {
+                    TilesetService.deleteTileset($scope.selectedTileset.name)
+                        .success(function () {
+                            AlertService.addPopUpAlert('Success', 'Tileset delete', 'success');
+                            $scope.refresh();
+                        })
+                        .error(function () {
+                            AlertService.addPopUpAlert('Error', 'Tileset could not be deleted', 'danger');
+                        });
+                },
+                function () {});
+        };
+
+        $scope.addTileset = function () {
+            $uibModal.open({
+                templateUrl: 'js/templates/createTilesetModal.html',
+                controller: function ($scope, $uibModalInstance, $base64) {
+                    $scope.tileset = {};
+
+                    $scope.setFile = function (name, file) {
+                        var reader = new FileReader();
+
+                        reader.onload = function (readerEvt) {
+                            $scope.tileset.imgSrc = $base64.encode(readerEvt.target.result);
+                        };
+
+                        reader.readAsBinaryString(file);
+                    };
+
+                    $scope.cancel = function () {
+                        $uibModalInstance.dismiss();
+                    };
+
+                    $scope.add = function () {
+
+                        if($scope.tileset.imgSrc == null)
+                            return;
+
+                        TilesetService.createTileset($scope.tileset)
+                            .success(function (data) {
+                                $scope.refresh();
+                                AlertService.addPopUpAlert('Success', 'Tileset created', 'success');
+                            })
+                            .error(function (data) {
+                                AlertService.addPopUpAlert('Error', ErrorFormatter.format(data), 'danger');
+                            });
+
+                        $uibModalInstance.close();
+                    }
+
+                },
+                scope: $scope
+            });
+        };
+
+        $scope.previewImage = function (tileset) {
+            TilesetService.getTileset(tileset.name).success(function (data) {
+                $uibModal.open({
+                    templateUrl: 'js/templates/tilesetImagePreviewModal.html',
+                    size: 'lg',
+                    controller: function ($scope) {
+                        $scope.imgSrc = 'data:image/png;base64,' + data.imgSrc;
+                    }
+                });
             });
         };
     });
@@ -413,17 +503,31 @@
 
         return {
             getTileset: getTileset,
-            listTilesets: listTilesets
+            listTilesets: listTilesets,
+            createTileset: createTileset,
+            deleteTileset: deleteTileset,
+            uploadTilesetImage: uploadTilesetImage,
         };
 
-        function getTileset(id) {
-            return $http.get('/api/tilesets/' + id);
+        function getTileset(name) {
+            return $http.get('/api/tilesets/' + name);
         }
 
         function listTilesets() {
             return $http.get('/api/tilesets');
         }
 
+        function createTileset(tileset) {
+            return $http.post('/api/tilesets', tileset);
+        }
+
+        function deleteTileset(name) {
+            return $http.delete('/api/tilesets/' + name);
+        }
+
+        function uploadTilesetImage(name, img) {
+
+        }
     });
 
     app.factory('AlertService', function ($http, $uibModal) {
@@ -675,6 +779,28 @@
         };
     }]);
 
+    app.directive('fileChooser', function() {
+        return {
+            restrict: 'A',
+            templateUrl: 'js/directives/file-chooser.html',
+            scope: {
+                name: '@fileChooser',
+                btnBrowseTxt: '@btnBrowseTxt',
+                onFileChange: '&onFileChange'
+            },
+            link: function(scope) {
+
+                scope.file = null;
+
+                scope.fileNameChanged = function(elem) {
+                    scope.file = elem.files[0];
+                    scope.$apply();
+                    scope.onFileChange({name: scope.name, file: scope.file});
+                };
+            }
+        }
+    });
+
     app.config(function($routeProvider, $httpProvider) {
 
         $httpProvider.interceptors.push(function($q, $cookies, $location) {
@@ -706,6 +832,10 @@
             .when('/projects/:name', {
                 templateUrl: 'js/views/project-details.html',
                 controller: 'ProjectDetailsCtrl'
+            })
+            .when('/tilesets', {
+                templateUrl: 'js/views/tilesets.html',
+                controller: 'TilesetDetailsCtrl'
             })
             .when('/level-editor/:roomId', {
                 templateUrl: 'js/views/level-editor.html',

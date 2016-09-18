@@ -8,4 +8,4 @@ INSERT INTO user_roles VALUES
   (default, 'user', 'ROLE_USER');
 
 INSERT INTO tilesets VALUES
-  (default, 'mario', CURRENT_DATE(), 2, 0, 0, 32, 32, 6, 12, 'mario.png');
+  (default, 'mario', CURRENT_DATE(), 2, 0, 0, 32, 32, 6, 12);

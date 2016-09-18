@@ -24,7 +24,6 @@ CREATE TABLE tilesets (
   tile_height INT NOT NULL,
   num_row INT NOT NULL,
   num_col INT NOT NULL,
-  file_name VARCHAR (45) NOT NULL,
   PRIMARY KEY (id)
 );
 

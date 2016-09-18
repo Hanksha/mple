@@ -1,0 +1,48 @@
+<nav-bar></nav-bar>
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-lg-12">
+      <div class="panel panel-default">
+        <button type="button" class="btn btn-danger btn-s pull-right small-button" ng-click="deleteTileset()"
+                tooltip-placement="bottom" uib-tooltip="Delete">
+          <span class="fa fa-trash" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="btn btn-success btn-s pull-right small-button" ng-click="addTileset()"
+                tooltip-placement="bottom" uib-tooltip="Add">
+          <span class="fa fa-plus" aria-hidden="true"></span>
+        </button>
+        <div class="panel-heading">Tilesets</div>
+        <div class="panel-body">
+          <table class="table table-striped">
+            <thead>
+            <tr>
+              <th>Name</th>
+              <th>Date Created</th>
+              <th>spacing</th>
+              <th>Offset X</th>
+              <th>Offset Y</th>
+              <th>Tile Width</th>
+              <th>Tile Height</th>
+              <th>Number of row</th>
+              <th>Number of column</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-click="selectTileset(tileset)" ng-repeat="tileset in tilesetList" ng-class="{info: selectedTileset.name == tileset.name}">
+              <td><a ng-click="previewImage(tileset)">{{tileset.name}}</a></td>
+              <td>{{tileset.dateCreated}}</td>
+              <td>{{tileset.spacing}}</td>
+              <td>{{tileset.offsetX}}</td>
+              <td>{{tileset.offsetY}}</td>
+              <td>{{tileset.tileWidth}}</td>
+              <td>{{tileset.tileHeight}}</td>
+              <td>{{tileset.numRow}}</td>
+              <td>{{tileset.numCol}}</td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,57 @@
+<div class="modal-header">
+  <button type="button" class="close" ng-click="cancel()" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+  <h4 class="modal-title">Add a tileset</h4>
+</div>
+<div class="modal-body">
+  <form>
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" class="form-control" ng-model="tileset.name">
+      <span class="help-block">The name of the tileset, must be unique.</span>
+    </div>
+    <div class="form-group">
+      <label>Spacing</label>
+      <input type="number" min="0" class="form-control" ng-model="tileset.spacing">
+      <span class="help-block">The space between each column and row.</span>
+    </div>
+    <div class="form-group">
+      <label>Offset X</label>
+      <input type="number" min="0" class="form-control" ng-model="tileset.offsetX">
+      <span class="help-block">The horizontal margin of the tileset.</span>
+    </div>
+    <div class="form-group">
+      <label>Offset Y</label>
+      <input type="number" min="0" class="form-control" ng-model="tileset.offsetY">
+      <span class="help-block">The vertical margin of the tileset</span>
+    </div>
+    <div class="form-group">
+      <label>Tile Width</label>
+      <input type="number" min="1" class="form-control" ng-model="tileset.tileWidth">
+      <span class="help-block">The width of the tiles in pixel.</span>
+    </div>
+    <div class="form-group">
+      <label>Tile Height</label>
+      <input type="number" min="1" class="form-control" ng-model="tileset.tileHeight">
+      <span class="help-block">The height of the tiles in pixel.</span>
+    </div>
+    <div class="form-group">
+      <label>Number of Column</label>
+      <input type="number" min="1" class="form-control" ng-model="tileset.numCol">
+      <span class="help-block">The number of column in the tileset.</span>
+    </div>
+    <div class="form-group">
+      <label>Number of Row</label>
+      <input type="number" min="1" class="form-control" ng-model="tileset.numRow">
+      <span class="help-block">The number of row in the tileset.</span>
+    </div>
+    <div class="form-group">
+      <label>Image</label>
+      <div file-chooser="image" btn-browse-txt="Choose File" on-file-change="setFile(name, file)"></div>
+      <span class="help-block">The image of the tileset in PNG format.</span>
+    </div>
+  </form>
+</div>
+<div class="modal-footer">
+  <button type="button" class="btn btn-default" ng-click="cancel()">Cancel</button>
+  <button type="button" class="btn btn-primary" ng-click="add()">Add</button>
+</div>
