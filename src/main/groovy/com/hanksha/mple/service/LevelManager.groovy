@@ -6,11 +6,20 @@ import com.hanksha.mple.data.ProjectRepository
 import com.hanksha.mple.data.model.Level
 import com.hanksha.mple.data.model.LevelMeta
 import com.hanksha.mple.data.model.Project
+import com.hanksha.mple.exception.CommitNotFoundException
 import com.hanksha.mple.exception.LevelAlreadyExistsException
 import com.hanksha.mple.exception.LevelNotFoundException
 import com.hanksha.mple.exception.ProjectNotFoundException
 import org.apache.commons.io.FileUtils
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.lib.ObjectId
+import org.eclipse.jgit.lib.ObjectLoader
+import org.eclipse.jgit.lib.Repository
+import org.eclipse.jgit.revwalk.RevCommit
+import org.eclipse.jgit.revwalk.RevTree
+import org.eclipse.jgit.revwalk.RevWalk
+import org.eclipse.jgit.treewalk.TreeWalk
+import org.eclipse.jgit.treewalk.filter.PathFilter
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
@@ -27,24 +36,65 @@ class LevelManager {
     @Autowired
     ObjectMapper objectMapper
 
-    String getLevelAsString(int id, String version) {
-        LevelMeta levelMeta = levelRepo.findOne(id)
+    String getLevelAsString(String projectName, String levelName, String version) {
+
+        Project project = projectRepo.findOne(projectName)
+
+        if(!project)
+            throw new ProjectNotFoundException(projectName)
+
+        LevelMeta levelMeta = levelRepo.findOne(project.id, levelName)
 
         if(!levelMeta)
-            throw new LevelNotFoundException(id)
+            throw new LevelNotFoundException(projectName, levelName)
 
-        Project project = projectRepo.findOne(levelMeta.projectId)
+        File folder = FileUtils.getFile(new File(ProjectManager.ROOT_PROJECT_FOLDER), project.name)
 
-        FileUtils.getFile(new File(ProjectManager.ROOT_PROJECT_FOLDER), project.name, levelMeta.name + '.json').text
+        String levelText = ''
+
+        if(version && !version.equalsIgnoreCase('latest')) {
+
+            Repository repository = Git.open(folder).repository
+
+            ObjectId commitId = repository.resolve(version);
+
+            RevWalk revWalk = new RevWalk(repository)
+
+            RevCommit commit = revWalk.parseCommit(commitId);
+            RevTree tree = commit.getTree()
+
+            TreeWalk treeWalk = new TreeWalk(repository)
+            treeWalk.addTree(tree);
+            treeWalk.setRecursive(true);
+            treeWalk.setFilter(PathFilter.create(levelMeta.name + '.json'));
+
+            if (!treeWalk.next()) {
+                throw new CommitNotFoundException(projectName, version)
+            }
+
+            ObjectId objectId = treeWalk.getObjectId(0);
+            ObjectLoader loader = repository.open(objectId);
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream()
+            loader.copyTo(out)
+
+            levelText = out.toString()
+
+            revWalk.dispose();
+        }
+        else
+            levelText = FileUtils.getFile(folder, levelMeta.name + '.json').text
+
+        levelText
     }
 
     List<LevelMeta> listLevelForProject(String projectName) {
-        int projectId = projectRepo.findOne(projectName)?.id
+        Project project = projectRepo.findOne(projectName)
 
-        if(projectId == 0)
+        if(!project)
             throw new ProjectNotFoundException(projectName)
 
-        List<LevelMeta> levels = levelRepo.findAll().findAll {it.projectId = projectId}
+        List<LevelMeta> levels = levelRepo.findAll().findAll {it.projectId == project.id}
 
         levels
     }

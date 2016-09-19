@@ -10,7 +10,17 @@ app.run(function (Tools) {
     );
 
     function handle(event, editor) {
-        editor.tileMap.setTileId(editor.selectedLayer, editor.selectedTiles, editor.cursor.row, editor.cursor.col);
+        var tiles = editor.selectedTiles;
+        var startRow = editor.cursor.row - Math.floor(tiles.length / 2);
+        var startCol = editor.cursor.col - Math.floor(tiles[0].length / 2);
+        
+        editor.messaging.send('/app/editor/' + editor.roomId, {
+            type: 'tileOperation',
+            layerIndex: editor.selectedLayer,
+            startRow: startRow,
+            startCol: startCol,
+            tiles: tiles
+        });
     }
 });
 
@@ -24,7 +34,13 @@ app.run(function (Tools) {
     );
 
     function handle(event, editor) {
-        editor.tileMap.setTileId(editor.selectedLayer, [[0]], editor.cursor.row, editor.cursor.col);
+        editor.messaging.send('/app/editor/' + editor.roomId, {
+            type: 'tileOperation',
+            layerIndex: editor.selectedLayer,
+            startRow: editor.cursor.row,
+            startCol: editor.cursor.col,
+            tiles: [[0]]
+        });
     }
 });
 

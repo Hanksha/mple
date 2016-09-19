@@ -1,4 +1,4 @@
-package com.hanksha.mple.data.model
+package com.hanksha.mple.data.model.request
 
 import javax.validation.constraints.NotNull
 

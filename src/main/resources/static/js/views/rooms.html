@@ -1,0 +1,38 @@
+<nav-bar></nav-bar>
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-lg-12">
+      <div class="panel panel-default">
+        <button type="button" class="btn btn-success btn-s pull-right small-button" ng-click="joinRoom()"
+                tooltip-placement="bottom" uib-tooltip="Join">
+          Join room
+        </button>
+        <div class="panel-heading">Rooms</div>
+        <div class="panel-body">
+          <table class="table table-striped">
+            <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Level</th>
+              <th>Users</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr ng-click="selectRoom(room)" ng-repeat="room in rooms" ng-class="{info: selectedRoom.id == room.id}">
+              <td>{{room.id}}</td>
+              <td>{{room.name}}</td>
+              <td>{{room.projectName + '/' + room.levelName}}</td>
+              <td>
+                <ul>
+                  <li ng-repeat="username in room.users">{{username}}</li>
+                </ul>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

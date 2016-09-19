@@ -1,27 +1,21 @@
 package com.hanksha.mple.config
 
-import com.hanksha.mple.handler.MarcoHandler
-import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.web.socket.config.annotation.EnableWebSocket
-import org.springframework.web.socket.config.annotation.WebSocketConfigurer
-import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
-
-/**
- * Created by vivien on 8/23/16.
- */
+import org.springframework.messaging.simp.config.MessageBrokerRegistry
+import org.springframework.web.socket.config.annotation.AbstractWebSocketMessageBrokerConfigurer
+import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker
+import org.springframework.web.socket.config.annotation.StompEndpointRegistry
 
 @Configuration
-@EnableWebSocket
-class WebSocketConfig implements WebSocketConfigurer {
+@EnableWebSocketMessageBroker
+class WebSocketConfig extends AbstractWebSocketMessageBrokerConfigurer {
 
-    @Override
-    void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(marcoHandler(), '/marco').withSockJS()
+    void configureMessageBroker(MessageBrokerRegistry registry) {
+        registry.enableSimpleBroker('/topic', '/queue')
+        registry.setApplicationDestinationPrefixes('/app')
     }
 
-    @Bean
-    MarcoHandler marcoHandler() {
-        new MarcoHandler()
+    void registerStompEndpoints(StompEndpointRegistry registry) {
+        registry.addEndpoint('/mple').withSockJS()
     }
 }

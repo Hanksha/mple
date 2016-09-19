@@ -1,6 +1,9 @@
 package com.hanksha.mple
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.hanksha.mple.data.ProjectRepository
+import com.hanksha.mple.data.model.message.editor.LevelOperation
+import com.hanksha.mple.data.model.message.editor.TileOperation
 import com.hanksha.mple.service.ProjectManager
 import groovy.json.JsonOutput
 import org.apache.commons.io.FileUtils
@@ -53,6 +56,9 @@ class MpleApplicationTests {
 	@Autowired
 	ProjectRepository projectRepo
 
+	@Autowired
+	ObjectMapper objectMapper
+
 	@Before
 	void setup() {
 		mockMvc = new MockMvcBuilders().webAppContextSetup(webApplicationContext)
@@ -93,5 +99,11 @@ class MpleApplicationTests {
 		mockMvc.perform(delete('/api/projects/' + projectName)
 				.with(authentication(auth)))
 				.andExpect(status().isOk())
+	}
+
+	@Test
+	void testObjectMapper() {
+		String json = '{"type":"tileOperation", "layerIndex": 0, "startRow": 0, "startCol": 0, "tiles": [[0]]}'
+		assert objectMapper.readValue(json, LevelOperation).class == TileOperation
 	}
 }

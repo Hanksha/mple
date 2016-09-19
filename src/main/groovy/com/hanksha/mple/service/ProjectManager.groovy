@@ -1,15 +1,20 @@
 package com.hanksha.mple.service
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.hanksha.mple.data.LevelRepository
 import com.hanksha.mple.data.ProjectRepository
 import com.hanksha.mple.data.UserRoleRepository
 import com.hanksha.mple.data.model.Commit
+import com.hanksha.mple.data.model.LevelMeta
 import com.hanksha.mple.data.model.Project
+import com.hanksha.mple.exception.CommitNotFoundException
 import com.hanksha.mple.exception.ProjectAlreadyExistsException
 import com.hanksha.mple.exception.ProjectNotFoundException
 import com.hanksha.mple.exception.ProjectPermissionDeniedException
 import org.apache.commons.io.FileUtils
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.diff.DiffEntry
+import org.eclipse.jgit.lib.AnyObjectId
 import org.eclipse.jgit.lib.ObjectId
 import org.eclipse.jgit.lib.ObjectReader
 import org.eclipse.jgit.revwalk.RevCommit
@@ -37,6 +42,9 @@ class ProjectManager {
 
     @Autowired
     UserRoleRepository userRoleRepo
+
+    @Autowired
+    LevelRepository levelRepo
 
     @PostConstruct
     void init() {
@@ -69,7 +77,6 @@ class ProjectManager {
             project.commits << commit
 
             ObjectReader reader = git.getRepository().newObjectReader()
-
 
             // commit tree
             CanonicalTreeParser newTree = new CanonicalTreeParser()
@@ -146,4 +153,40 @@ class ProjectManager {
         FileUtils.deleteDirectory(FileUtils.getFile(new File(ROOT_PROJECT_FOLDER), name))
     }
 
+    void revertCommit(String projectName, String commitName) {
+        Project project = getProject(projectName)
+
+        Commit commit = project.commits.find {it.name == commitName}
+
+        if(!commit)
+            throw new CommitNotFoundException(projectName, commitName)
+
+        Git git = Git.open(FileUtils.getFile(new File(ROOT_PROJECT_FOLDER), projectName))
+        RevCommit revCommit = null;
+        Iterator<RevCommit> iter = git.log().all().call().iterator()
+
+        while(iter.hasNext()) {
+            RevCommit rev = iter.next()
+            if(rev.getName().substring(0, 8) == commitName) {
+                revCommit = rev
+                break;
+            }
+        }
+
+        git.revert().include(revCommit.getId()).call()
+
+        String change = commit.changedFileNames.first()
+
+        if(change.contains('ADD')) {
+            String levelName = ((change - 'ADD ') - '.json')
+            LevelMeta levelMeta = levelRepo.findOne(project.id, levelName)
+
+            if(levelMeta)
+                levelRepo.delete(levelMeta.id)
+        }
+        else if(change.contains('DELETE')) {
+            String levelName = ((change - 'DELETE ') - '.json')
+            levelRepo.save(new LevelMeta(projectId: project.id, name: levelName, dateCreated: new Date()))
+        }
+    }
 }

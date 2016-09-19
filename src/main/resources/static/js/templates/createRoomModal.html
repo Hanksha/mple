@@ -1,0 +1,25 @@
+<div class="modal-header">
+  <button type="button" class="close" ng-click="cancel()" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+  <h4 class="modal-title">Create a room</h4>
+</div>
+<div class="modal-body">
+  <form>
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" class="form-control" ng-model="room.name">
+      <span class="help-block">The name of the room.</span>
+    </div>
+    <div class="form-group">
+      <label>Version</label>
+      <select class="form-control" ng-model="room.levelVersion">
+        <option selected value="">Latest</option>
+        <option ng-repeat="commit in project.commits" value="{{commit.name}}">{{commit.name}}</option>
+      </select>
+      <span class="help-block">The version of the level.</span>
+    </div>
+  </form>
+</div>
+<div class="modal-footer">
+  <button type="button" class="btn btn-default" ng-click="cancel()">Cancel</button>
+  <button type="button" class="btn btn-primary" ng-click="add()">Create</button>
+</div>

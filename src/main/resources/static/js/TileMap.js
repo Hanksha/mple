@@ -4,6 +4,9 @@ function TileMap(width, height, tileWidth, tileHeight, layers) {
     this.tileWidth = tileWidth;
     this.tileHeight = tileHeight;
     this.layers = layers;
+    angular.forEach(this.layers, function (value) {
+       value.visible = true;
+    });
 }
 
 TileMap.prototype.getTileId = function (layerIndex, row, col) {
@@ -11,8 +14,8 @@ TileMap.prototype.getTileId = function (layerIndex, row, col) {
 };
 
 TileMap.prototype.setTileId = function (layerIndex, tileIds, row, col) {
-    var startRow = row - Math.floor(tileIds.length / 2);
-    var startCol = col - Math.floor(tileIds[0].length / 2);
+    var startRow = row;
+    var startCol = col;
 
     var mapRow, mapCol;
 

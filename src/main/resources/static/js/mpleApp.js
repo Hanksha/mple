@@ -1,37 +1,19 @@
 (function () {
 
     var app = angular.module('mpleApp', [
-        'ngRoute', 'ui.bootstrap', 'ngAnimate', 'ngFileUpload', 'base64',
+        'ngRoute', 'ui.bootstrap', 'ngAnimate', 'ngFileUpload', 'base64', 'ngStomp',
         'ngCookies', 'ngSanitize', 'monospaced.mousewheel', 'cfp.hotkeys']);
     
-    app.controller('MainCtrl', function ($scope, $location) {
-       /* var url = '/marco';
-        var sock = new SockJS(url);
-
-        function sayMarco() {
-            sock.send('I love you, Vivien!');
-        }
-
-        sock.onopen = function () {
-            console.log('Socket opened');
-        };
-
-        sock.onclose = function () {
-            console.log('Socket closed');
-        };
-
-        sock.onmessage = function (message) {
-            console.log('Received message: ' + message.data);
-            setTimeout(sayMarco, 2000);
-        };
-        */
+    app.controller('MainCtrl', function ($scope, $location, MessagingService) {
         $scope.go = function (path) {
             $location.path(path)
         }
     });
 
-    app.controller('HomeCtrl', function ($interval) {
-        
+    app.controller('HomeCtrl', function ($scope, AuthService) {
+        if(!AuthService.isAuthenticated())
+            $scope.go('/login');
+        $scope.username = AuthService.getUsername();
     });
 
     app.controller('LoginCtrl', function ($scope, AuthService) {
@@ -111,13 +93,18 @@
 
     app.controller('ProjectDetailsCtrl', function ($scope, $routeParams, $uibModal, $log,
                                                    ProjectService, LevelService, TilesetService,
-                                                   AlertService, ErrorFormatter) {
-
+                                                   AlertService, ErrorFormatter, RoomService) {
 
         $scope.selectedLevel = null;
 
+        $scope.selectedCommit = null;
+
         $scope.selectLevel = function (level) {
           $scope.selectedLevel = level;
+        };
+
+        $scope.selectCommit = function (commit) {
+            $scope.selectedCommit = commit;
         };
 
         $scope.refresh = function () {
@@ -179,6 +166,63 @@
                 },
                 scope: $scope
             });
+        };
+
+        $scope.edit = function () {
+
+            if($scope.selectedLevel == null)
+                return;
+
+            $uibModal.open({
+                templateUrl: 'js/templates/createRoomModal.html',
+                controller: function ($scope, $uibModalInstance) {
+                    $scope.room = {
+                        projectName: $scope.project.name,
+                        levelName: $scope.selectedLevel.name
+                    };
+
+                    $scope.cancel = function () {
+                        $uibModalInstance.dismiss();
+                    };
+
+                    $scope.add = function () {
+                        RoomService.createRoom($scope.room)
+                            .success(function (data) {
+                                AlertService.addConfirmationAlert('Room created', 'Process to room?',
+                                function () {
+                                    $scope.go('/level-editor/' + data.id);
+                                }, function () {});
+                            })
+                            .error(function (data) {
+                                AlertService.addPopUpAlert('Error: could not create the room', ErrorFormatter.format(data), 'danger');
+                            });
+                        $uibModalInstance.close();
+                    }
+
+                },
+                scope: $scope
+            });
+        };
+
+        $scope.download = function () {
+            
+        };
+        
+        $scope.revert = function () {
+            AlertService.addConfirmationAlert(
+                'Revert commit',
+                'Are you sure you want to revert commit ' + $scope.selectCommit.name + '?',
+                function () {
+                    ProjectService.revertCommit($scope.project.name, $scope.selectedCommit.name)
+                        .success(function (data) {
+                            $scope.refresh();
+                            AlertService.addPopUpAlert('Success', 'Commit reverted', 'success');
+                        })
+                        .error(function (data) {
+                            AlertService.addPopUpAlert('Error', ErrorFormatter.format(data), 'danger');
+                        });
+                },
+                function () {});
         };
     });
 
@@ -270,12 +314,39 @@
         };
     });
 
+    app.controller('RoomsCtrl', function ($scope, $log, AlertService, RoomService) {
+
+        $scope.refresh = function () {
+            RoomService.listRooms().success(function (data) {
+                $scope.rooms = data;
+            });
+        };
+
+        $scope.refresh();
+        
+        $scope.joinRoom = function () {
+            RoomService.connectToRoom($scope.selectedRoom.id)
+                .success(function (data) {
+                    $scope.go('/level-editor/' + $scope.selectedRoom.id);
+                })
+                .error(function (data) {
+                    AlertService.addPopUpAlert('Error', 'Could not join the room', 'danger');
+                });
+        };
+
+        $scope.selectedRoom = {};
+
+        $scope.selectRoom = function (room) {
+            $scope.selectedRoom = room;
+        }
+    });
+
     app.controller('LevelEditorCtrl', LevelEditor);
 
     app.controller('TilesetCtrl', function ($scope, TilesetService, EventService) {
 
         EventService.subscribe('level-loaded', function (event) {
-            TilesetService.getTileset(event.message.tilesetId).success(loadTileset);
+            TilesetService.getTileset(event.message).success(loadTileset);
         });
 
         var tileset;
@@ -283,17 +354,17 @@
 
         function loadTileset(data) {
             tileset = new Tileset(
-                data.tileset.offsetX,
-                data.tileset.offsetY,
-                data.tileset.tileWidth,
-                data.tileset.tileHeight,
-                data.tileset.numRow,
-                data.tileset.numCol,
-                data.tileset.spacing
+                data.offsetX,
+                data.offsetY,
+                data.tileWidth,
+                data.tileHeight,
+                data.numRow,
+                data.numCol,
+                data.spacing
             );
 
             var img = new Image();
-            img.src = 'data:image/png;base64,' + data.img;
+            img.src = 'data:image/png;base64,' + data.imgSrc;
             var baseTexture = new PIXI.BaseTexture(img);
             baseTexture.scaleMode = PIXI.SCALE_MODES.NEAREST;
 
@@ -454,7 +525,8 @@
             getProject: getProject,
             listProjects: listProjects,
             createProject: createProject,
-            deleteProject: deleteProject
+            deleteProject: deleteProject,
+            revertCommit: revertCommit
         };
 
         function getProject(name) {
@@ -472,6 +544,10 @@
         function deleteProject(name) {
             return $http.delete('/api/projects/' + name)
         }
+
+        function revertCommit(name, commit) {
+            return $http.patch('/api/projects/' + name + '/revert/' + commit, {});
+        }
     });
     
     app.factory('LevelService', function ($http) {
@@ -482,8 +558,12 @@
             deleteLevel: deleteLevel
         };
 
-        function getLevel(id) {
-            return $http.get('/api/projects/project/levels/' + id);
+        function getLevel(projectName, levelName, version) {
+            return $http.get('/api/projects/' + projectName + '/levels/' + levelName + '?version=' + version);
+        }
+
+        function getLevelByName(projectName, levelName) {
+            return $http.get('/api/projects' + projectName + '/levels/' + levelName);
         }
         
         function listLevels(projectName) {
@@ -496,6 +576,46 @@
 
         function deleteLevel(projectName, levelName) {
             return $http.delete('/api/projects/' + projectName + '/levels/' + levelName);
+        }
+    });
+    
+    app.factory('RoomService', function ($http) {
+        return {
+            listRooms: listRooms,
+            createRoom: createRoom,
+            destroyRoom: destroyRoom,
+            connectToRoom: connectToRoom,
+            disconnectFromRoom: disconnectFromRoom,
+            getRoomLevel: getRoomLevel,
+            commitRoom: commitRoom
+        };
+
+        function listRooms() {
+            return $http.get('/api/rooms');
+        }
+
+        function createRoom(room) {
+            return $http.post('/api/rooms', room);
+        }
+
+        function destroyRoom(id) {
+            return $http.delete('/api/rooms/' + id);
+        }
+
+        function connectToRoom(id) {
+            return $http.post('/api/rooms/connect/' + id, {});
+        }
+
+        function disconnectFromRoom(id) {
+            return $http.post('/api/rooms/disconnect/' + id, {});
+        }
+
+        function getRoomLevel(id) {
+            return $http.get('/api/rooms/' + id + '/level')
+        }
+        
+        function commitRoom(id, commitMessage) {
+            return $http.patch('/api/rooms/commit/' + id, {message: commitMessage})
         }
     });
 
@@ -530,9 +650,11 @@
         }
     });
 
-    app.factory('AlertService', function ($http, $uibModal) {
+    app.factory('AlertService', function ($http, $uibModal, MessagingService) {
 
         var alerts = [];
+
+        MessagingService.subscribe('/topic/alerts', receiveAlerts);
 
         return {
             addAlert: addAlert,
@@ -543,13 +665,11 @@
         };
 
         function addAlert(message, type) {
-            var date = new Date();
-
             alerts.push({
                 msg: message,
                 type: type,
                 timestamp: new Date().toTimeString().substring(0, 8)
-            })
+            });
         }
 
         function addPopUpAlert(title, message, type) {
@@ -600,6 +720,9 @@
             alerts.splice(index, 1);
         }
 
+        function receiveAlerts(payload, headers, res) {
+            addAlert(payload.message, payload.type);
+        }
     });
 
     app.factory('ErrorFormatter', function () {
@@ -682,24 +805,97 @@
 
     });
 
-    app.factory('AuthService', function ($cookies, $http, AlertService, $location) {
+    app.factory('MessagingService', function($log, $stomp) {
+
+        var connected = false;
+        var connecting = false;
+
+        var subscriptionQueue = [];
+
+        return {
+            connect: connect,
+            disconnect: disconnect,
+            send: send,
+            subscribe: subscribe
+        };
+
+        function connect() {
+            if(connecting)
+                return;
+
+            $stomp.setDebug(function (args) {
+                $log.debug(args);
+            });
+
+            connecting = true;
+
+            $stomp.connect('/mple').then(function (frame) {
+                connected = true;
+                connecting = false;
+                angular.forEach(subscriptionQueue, function (value) {
+                   subscribe(value.path, value.callback)
+                });
+
+                subscriptionQueue = [];
+            });
+        }
+
+        function disconnect() {
+            if($stomp.stomp != null)
+                $stomp.disconnect();
+        }
+
+        function send(path, body) {
+            if(!connected) {
+                $log.debug('not connected');
+                connect();
+                return;
+            }
+
+            $stomp.send(path, body, {});
+        }
+
+        function subscribe(path, callback) {
+            if(!connected) {
+                subscriptionQueue.push({path: path, callback: callback});
+                return;
+            }
+
+            $stomp.subscribe(path, callback);
+        }
+    });
+
+    app.factory('AuthService', function ($cookies, $http, MessagingService, AlertService, $location) {
+
         return {
             isAuthenticated: isAuthenticated,
             authenticate: authenticate,
-            logout: logout
+            logout: logout,
+            loggedout: loggedout,
+            getUsername: getUsername,
+            getRoles: getRoles
         };
-        
+
+        function getUsername() {
+            return $cookies.get('username');
+        }
+
+        function getRoles() {
+            return $cookies.get('roles').split('.');
+        }
+
         function isAuthenticated() {
             return $cookies.get('authenticated') == 'true';
         }
 
-        function authenticate(username, password) {
+        function authenticate(_username, password) {
             $http.post(
                 '/login',
-                'username='+username+'&'+'password='+password,
+                'username='+_username+'&'+'password='+password,
                 {headers: {'Content-Type': 'application/x-www-form-urlencoded'}})
                 .success(function () {
                     $cookies.put('authenticated', 'true');
+                    MessagingService.connect();
                     AlertService.addPopUpAlert('Login successful', 'Welcome.', 'success');
                     $location.path('/');
                 })
@@ -707,13 +903,18 @@
                     AlertService.addPopUpAlert('Login failed', 'Username or password incorrect.', 'info');
                 });
         }
+
+        function loggedout() {
+            $cookies.put('authenticated', 'false');
+            $location.path('/login');
+            MessagingService.disconnect();
+        }
         
         function logout() {
             $http.post('/logout', '')
                 .success(function () {
-                    $cookies.put('authenticated', 'false');
+                    loggedout();
                     AlertService.addPopUpAlert('Logout successful', 'Welcome.', 'success');
-                    $location.path('/login');
                 })
                 .error(function () {
                     AlertService.addPopUpAlert('Logout failed', 'Could not logout', 'info');
@@ -733,14 +934,15 @@
         };
     });
 
-    app.directive('alerts', function (AlertService) {
+    app.directive('alerts', function ($interval, AlertService) {
 
         return {
             restrict: 'E',
             templateUrl: 'js/directives/alerts.html',
             link: function (scope) {
-                scope.alerts = AlertService.getAlerts();
-
+                $interval(function () {
+                    scope.alerts = AlertService.getAlerts().slice().reverse();
+                }, 1000);
                 scope.closeAlert = function (index) {
                     AlertService.closeAlert(index);
                 };
@@ -803,15 +1005,15 @@
 
     app.config(function($routeProvider, $httpProvider) {
 
-        $httpProvider.interceptors.push(function($q, $cookies, $location) {
+        $httpProvider.interceptors.push(function($q, $injector, $cookies, $location) {
             return {
-                'responseError': function(response) {
-                    if(response.status == 401) {
-                        $cookies.put('authenticated', 'false');
-                        $location.path('/login')
+                'responseError': function(rejection) {
+                    if(rejection.status == 401) {
+                        var AuthService = $injector.get('AuthService');
+                        AuthService.loggedout();
                     }
 
-                    return response;
+                    return $q.reject(rejection);
                 }
             };
         });
@@ -836,6 +1038,10 @@
             .when('/tilesets', {
                 templateUrl: 'js/views/tilesets.html',
                 controller: 'TilesetDetailsCtrl'
+            })
+            .when('/rooms', {
+                templateUrl: 'js/views/rooms.html',
+                controller: 'RoomsCtrl'
             })
             .when('/level-editor/:roomId', {
                 templateUrl: 'js/views/level-editor.html',

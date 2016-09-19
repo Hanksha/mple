@@ -2,9 +2,6 @@ package com.hanksha.mple.data
 
 import com.hanksha.mple.data.model.Project
 
-/**
- * Created by vivien on 9/12/16.
- */
 interface ProjectRepository {
 
     Project findOne(String name)

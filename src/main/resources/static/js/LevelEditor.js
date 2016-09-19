@@ -1,11 +1,22 @@
-function LevelEditor($routeParams, hotkeys, Tools, LevelService, TilesetLoader, EventService) {
+function LevelEditor($routeParams, $log, hotkeys, $location, $uibModal,
+                     Tools, LevelService, RoomService, TilesetService,
+                     EventService, MessagingService, AlertService) {
     var self = this;
+    this.roomId = $routeParams.roomId;
     this.loaded = false;
-    this.world = null;
+    this.level = null;
     this.tileMap = null;
     this.objects = null;
 
     this.tools = Tools;
+    this.messaging = MessagingService;
+    this.roomService = RoomService;
+    this.eventService = EventService;
+    this.tilesetService = TilesetService;
+    this.levelService = LevelService;
+    this.uibModal = $uibModal;
+    this.alertService = AlertService;
+    this.location = $location;
     this.mouse = new Mouse();
     this.cursor = new Cursor();
     this.viewPort = new ViewPort();
@@ -24,25 +35,25 @@ function LevelEditor($routeParams, hotkeys, Tools, LevelService, TilesetLoader, 
     hotkeys.add({
         combo: 'shift+left',
         callback: function() {
-            this.viewPort.x -= 10;
+            self.viewPort.x -= 10;
         }
     });
     hotkeys.add({
         combo: 'shift+right',
         callback: function() {
-            this.viewPort.x += 10;
+            self.viewPort.x += 10;
         }
     });
     hotkeys.add({
         combo: 'shift+up',
         callback: function() {
-            this.viewPort.y -= 10;
+            self.viewPort.y -= 10;
         }
     });
     hotkeys.add({
         combo: 'shift+down',
         callback: function() {
-            this.viewPort.y += 10;
+            self.viewPort.y += 10;
         }
     });
 
@@ -55,8 +66,10 @@ function LevelEditor($routeParams, hotkeys, Tools, LevelService, TilesetLoader, 
         self.selectedTiles = event.message;
     });
 
-    LevelService.getWorld($routeParams.roomId).success(function (data) {
-        self.world = data;
+    RoomService.getRoomLevel($routeParams.roomId).success(function (data) {
+        self.level = data;
+        console.log(data);
+        console.log(data.tileMap);
         self.tileMap = new TileMap(
             data.tileMap.width,
             data.tileMap.height,
@@ -64,12 +77,55 @@ function LevelEditor($routeParams, hotkeys, Tools, LevelService, TilesetLoader, 
             data.tileMap.tileHeight,
             data.tileMap.layers
         );
+        console.log(self.tileMap);
+        console.log(self.level.tileset);
+        self.level.tileMap = self.tileMap;
+        self.objects = self.level.objects;
 
-        self.objects = self.world.objects;
+        EventService.send('level-loaded', self.level.tileset);
+    });
 
-        EventService.send('world-loaded', self.world);
+    MessagingService.subscribe('/topic/editor/' + this.roomId, function (payload, headers, res) {
+        var operation = payload.operation;
+        if(payload.type == 'TileOperation') {
+            self.tileMap.setTileId(operation.layerIndex, operation.tiles, operation.startRow, operation.startCol);
+        }
     });
 }
+
+LevelEditor.prototype.commit = function () {
+    var self = this;
+    this.uibModal.open({
+        templateUrl: 'js/templates/commitModal.html',
+        size: 'sm',
+        controller: function ($scope, $uibModalInstance) {
+            $scope.commitMessage = '';
+
+            $scope.cancel = function () {
+                $uibModalInstance.dismiss();
+            };
+
+            $scope.ok = function () {
+                self.roomService.commitRoom(self.roomId, $scope.commitMessage)
+                    .success(function (data) {
+                        self.alertService.addPopUpAlert('Success', 'Changes committed', 'success');
+                    })
+                    .error(function (data) {
+                        self.alertService.addPopUpAlert('Error', data, 'danger');
+                    });
+                $uibModalInstance.close();
+            }
+        }
+    });
+};
+
+LevelEditor.prototype.leaveRoom = function () {
+    var self = this;
+    this.roomService.disconnectFromRoom(this.roomId).success(function (data) {
+        self.location.path('/rooms');
+        self.alertService.addPopUpAlert('Success', 'Disconnected from room successfully', 'success')
+    });
+};
 
 LevelEditor.prototype.selectLayer = function (index) {
     this.selectedLayer = index;
@@ -124,7 +180,7 @@ LevelEditor.prototype.initView = function () {
     this.renderer = PIXI.autoDetectRenderer($('#level-view').width() - 8, $(window).height(), {backgroundColor: 0xEFEFEF, autoResize: true});
     $('#level-view').append(this.renderer.view);
 
-    this.levelRenderer = new WorldRenderer(this.renderer, this.world);
+    this.levelRenderer = new LevelRenderer(this.renderer, this.level);
 
     this.stage.addChild(this.levelRenderer.container);
     this.stage.addChild(this.gridGraphics);
@@ -134,7 +190,7 @@ LevelEditor.prototype.initView = function () {
     var self = this;
 
     window.onresize = function (event){
-        var view = $('#world-view');
+        var view = $('#level-view');
         self.renderer.resize(view.width(), $(window).height());
     };
 
@@ -204,12 +260,12 @@ LevelEditor.prototype.render = function () {
     this.renderer.render(this.stage);
 };
 
-function LevelRenderer(renderer, world) {
+function LevelRenderer(renderer, level) {
     this.renderer = renderer;
-    this.world = world;
+    this.level = level;
     this.container = new PIXI.Container();
     // this.objectRenderer = new WorldObjectRenderer();
-    this.tileMapRenderer = new TileMapRenderer(this.renderer, this.world.tileMap);
+    this.tileMapRenderer = new TileMapRenderer(this.renderer, this.level.tileMap);
 
     // set viewport and stage
     this.container.addChild(this.tileMapRenderer.container);

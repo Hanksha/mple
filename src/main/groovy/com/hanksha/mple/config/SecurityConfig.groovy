@@ -1,6 +1,8 @@
 package com.hanksha.mple.config
 
+import com.hanksha.mple.service.auth.UserService
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.AccessDeniedException
@@ -10,6 +12,8 @@ import org.springframework.security.config.annotation.web.builders.WebSecurity
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.AuthenticationException
+import org.springframework.security.core.session.SessionRegistry
+import org.springframework.security.core.session.SessionRegistryImpl
 import org.springframework.security.web.AuthenticationEntryPoint
 import org.springframework.security.web.access.AccessDeniedHandler
 import org.springframework.security.web.authentication.AuthenticationFailureHandler
@@ -27,6 +31,9 @@ class SecurityConfig extends WebSecurityConfigurerAdapter {
     DataSource dataSource
 
     @Autowired
+    UserService userService
+
+    @Autowired
     void configure(AuthenticationManagerBuilder auth) {
         auth.jdbcAuthentication()
                 .dataSource(dataSource)
@@ -39,7 +46,7 @@ class SecurityConfig extends WebSecurityConfigurerAdapter {
         http
             .csrf().disable()
             .authorizeRequests()
-                .antMatchers('/', '/plugins/**').permitAll()
+                .antMatchers('/', '/mple/info', '/plugins/**').permitAll()
                 .anyRequest().authenticated()
                 .and()
                 .exceptionHandling().accessDeniedHandler(new AccessDeniedHandler() {
@@ -57,13 +64,7 @@ class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
             .formLogin()
                 .loginProcessingUrl('/login')
-                .successHandler(new AuthenticationSuccessHandler() {
-                    void onAuthenticationSuccess(
-                            HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
-                        // temp fix to avoid redirect
-                        response.setStatus(HttpServletResponse.SC_OK)
-                    }
-                })
+                .successHandler(userService)
                 .failureHandler(new AuthenticationFailureHandler() {
                     void onAuthenticationFailure(
                             HttpServletRequest request, HttpServletResponse response, AuthenticationException exception) {
@@ -75,17 +76,18 @@ class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
             .logout()
                 .logoutUrl('/logout')
-                .logoutSuccessHandler(new LogoutSuccessHandler() {
-                    void onLogoutSuccess(
-                            HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
-                        // temp fix to avoid redirect
-                        response.setStatus(HttpServletResponse.SC_OK)
-                    }
-                })
+                .logoutSuccessHandler(userService)
+                .and()
+            .sessionManagement().maximumSessions(1).sessionRegistry(sessionRegistry())
     }
 
     @Override
     void configure(WebSecurity web) {
+    }
+
+    @Bean
+    SessionRegistry sessionRegistry() {
+        new SessionRegistryImpl()
     }
 
 }

@@ -2,6 +2,7 @@ package com.hanksha.mple.controller
 
 import com.hanksha.mple.data.ProjectRepository
 import com.hanksha.mple.data.model.Project
+import com.hanksha.mple.exception.CommitNotFoundException
 import com.hanksha.mple.exception.ProjectAlreadyExistsException
 import com.hanksha.mple.exception.ProjectNotFoundException
 import com.hanksha.mple.exception.ProjectPermissionDeniedException
@@ -74,4 +75,15 @@ class ProjectController {
         ResponseEntity.ok(JsonOutput.toJson('Project deleted'))
     }
 
+    @RequestMapping(value = '/{name}/revert/{commit}', method = RequestMethod.PATCH)
+    ResponseEntity revertCommit(@PathVariable String name, @PathVariable String commit) {
+        try {
+            projectManager.revertCommit(name, commit)
+            new ResponseEntity(HttpStatus.OK)
+        } catch (CommitNotFoundException ex) {
+            return new ResponseEntity(JsonOutput.toJson(ex.message), HttpStatus.NOT_FOUND)
+        } catch (ProjectNotFoundException ex) {
+            return new ResponseEntity(JsonOutput.toJson(ex.message), HttpStatus.NOT_FOUND)
+        }
+    }
 }

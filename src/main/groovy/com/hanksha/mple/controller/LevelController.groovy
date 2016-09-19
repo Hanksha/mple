@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestMethod
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 import javax.validation.Valid
@@ -27,18 +28,19 @@ class LevelController {
     @Autowired
     LevelManager levelManager
 
-    @RequestMapping(value = '/{id}', method = RequestMethod.GET)
-    ResponseEntity getLevel(@PathVariable int id) {
+    @RequestMapping(value = '/{name}', method = RequestMethod.GET)
+    ResponseEntity getLevel(@PathVariable String projectName, String name, @RequestParam String version) {
+        try {
+            String level = levelManager.getLevelAsString(projectName, name, version)
+            HttpHeaders headers = new HttpHeaders()
+            headers.add(HttpHeaders.CONTENT_TYPE, 'application/json')
+            return new ResponseEntity(level, headers, HttpStatus.OK)
 
-        File file = levelManager.getLevel(id, "")
-
-        HttpHeaders headers = new HttpHeaders()
-        headers.add(HttpHeaders.CONTENT_TYPE, 'application/json')
-
-        if(file)
-            new ResponseEntity(file.text, headers, HttpStatus.OK)
-        else
-            new ResponseEntity("Could not find level file with id '$id'",HttpStatus.NOT_FOUND)
+        } catch(ProjectNotFoundException ex) {
+            return new ResponseEntity(JsonOutput.toJson(ex.message), HttpStatus.NOT_FOUND)
+        } catch(LevelNotFoundException ex) {
+            return new ResponseEntity(JsonOutput.toJson(ex.message), HttpStatus.NOT_FOUND)
+        }
     }
 
     @RequestMapping(value = '', method = RequestMethod.GET)
@@ -47,7 +49,7 @@ class LevelController {
             List<LevelMeta> levels = levelManager.listLevelForProject(projectName)
             return new ResponseEntity(levels, HttpStatus.OK)
         } catch(ProjectNotFoundException ex) {
-            return new ResponseEntity(HttpStatus.NOT_FOUND)
+            return new ResponseEntity(JsonOutput.toJson(ex.message), HttpStatus.NOT_FOUND)
         }
     }
 

@@ -21,7 +21,7 @@
           </div>
           <div class="row"><div class="panel"></div></div>
           <div class="row">
-            <div class="col-lg-6">
+            <div class="col-lg-5">
               <div class="panel panel-default">
                 <button type="button" class="btn btn-danger btn-s pull-right small-button" ng-click="deleteLevel()"
                         tooltip-placement="bottom" uib-tooltip="Delete">
@@ -30,6 +30,14 @@
                 <button type="button" class="btn btn-success btn-s pull-right small-button" ng-click="add()"
                         tooltip-placement="bottom" uib-tooltip="Add">
                   <span class="fa fa-plus" aria-hidden="true"></span>
+                </button>
+                <button type="button" class="btn btn-info btn-s pull-right small-button" ng-click="edit()"
+                        tooltip-placement="bottom" uib-tooltip="Edit">
+                  <span class="fa fa-edit" aria-hidden="true"></span>
+                </button>
+                <button type="button" class="btn btn-warning btn-s pull-right small-button" ng-click="download()"
+                        tooltip-placement="bottom" uib-tooltip="Download">
+                  <span class="fa fa-download" aria-hidden="true"></span>
                 </button>
                 <div class="panel-heading">Levels</div>
                 <div class="panel-body">
@@ -50,14 +58,18 @@
                 </div>
               </div>
             </div>
-            <div class="col-lg-6">
+            <div class="col-lg-7">
               <div class="panel panel-default">
+                <button type="button" class="btn btn-danger btn-s pull-right small-button" ng-click="revert()"
+                        tooltip-placement="bottom" uib-tooltip="Revert Commit">
+                  <span class="fa fa-undo" aria-hidden="true"></span>
+                </button>
                 <div class="panel-heading">Commits</div>
                 <div class="panel-body">
                   <table class="table table-striped">
                     <thead>
                     <tr>
-                      <th>Author</th>
+                      <th>Author(s)</th>
                       <th>Commit</th>
                       <th>Message</th>
                       <th>Date</th>
@@ -65,7 +77,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <tr ng-repeat="commit in project.commits">
+                    <tr ng-repeat="commit in project.commits" ng-click="selectCommit(commit)" ng-class="{info: selectedCommit.name == commit.name}">
                       <td>{{commit.author}}</td>
                       <td>{{commit.name}}</td>
                       <td>{{commit.message}}</td>

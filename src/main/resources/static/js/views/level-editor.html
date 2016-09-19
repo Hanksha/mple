@@ -5,6 +5,7 @@
       <li class="dropdown">
         <a class="dropdown-toggle" data-toggle="dropdown">File</a>
         <ul class="dropdown-menu dropdown-user">
+          <li ng-click="editor.commit()"><a>Commit changes</a></li>
         </ul>
       </li>
       <li class="dropdown">
@@ -17,6 +18,9 @@
         <ul class="dropdown-menu dropdown-user">
         </ul>
       </li>
+    </ul>
+    <ul class="nav navbar-nav navbar-right">
+      <li><button class="btn btn-lg btn-primary" ng-click="editor.leaveRoom()">Leave Room</button></li>
     </ul>
   </div>
 </nav>
@@ -68,7 +72,7 @@
           </div>
           <div uib-accordion-group class="panel-default" is-open="status.isMiddleHeaderOpen">
             <uib-accordion-heading>
-              Mini Map
+              Tool Options
               <i class="pull-right fa" ng-class="{'fa-chevron-down': status.isMiddleHeaderOpen, 'fa-chevron-right': !status.isMiddleHeaderOpen}"></i>
             </uib-accordion-heading>
           </div>
