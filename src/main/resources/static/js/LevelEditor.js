@@ -7,6 +7,7 @@ function LevelEditor($routeParams, $log, hotkeys, $location, $uibModal,
     this.level = null;
     this.tileMap = null;
     this.objects = null;
+    this.annotations = [];
 
     this.tools = Tools;
     this.messaging = MessagingService;
@@ -23,9 +24,13 @@ function LevelEditor($routeParams, $log, hotkeys, $location, $uibModal,
     this.activeTool = Tools.getTool('brush');
     this.selectedTiles = [[0]];
     this.selectedLayer = 0;
+    this.showGrid = true;
+    this.showAnnotations = true;
+    this.showSketches = true;
 
     this.renderer = null;
     this.stage = new PIXI.Container();
+    this.annotationContainer = new PIXI.Container();
     this.selectedTilesPreview = new PIXI.Container();
     this.gridGraphics = new PIXI.Graphics();
     this.cursorHover = new PIXI.Graphics();
@@ -79,6 +84,7 @@ function LevelEditor($routeParams, $log, hotkeys, $location, $uibModal,
         );
         console.log(self.tileMap);
         console.log(self.level.tileset);
+        self.annotations = data.annotations;
         self.level.tileMap = self.tileMap;
         self.objects = self.level.objects;
 
@@ -90,6 +96,22 @@ function LevelEditor($routeParams, $log, hotkeys, $location, $uibModal,
         if(payload.type == 'TileOperation') {
             self.tileMap.setTileId(operation.layerIndex, operation.tiles, operation.startRow, operation.startCol);
         }
+        else if(payload.type = 'AddAnnotationOperation') {
+            console.log(self.level);
+            self.annotations.push(operation);
+        }
+        else if(payload.type = 'InsertLayerOperation') {
+            self.tileMap.insertLayer(operation.index, operation.name);
+        }
+        else if(payload.type = 'DeleteLayerOperation') {
+            self.deleteLayer(operation.index);
+        }
+        else if(payload.type = 'MoveLayerOperation') {
+            var layer = self.level.tileMap.layers[operation.index];
+            self.level.tileMap.layers[operation.index] = self.level.tileMap.layers[operation.index + operation.dir];
+            self.level.tileMap.layers[operation.index + operation.dir] = layer;
+        }
+
     });
 }
 
@@ -132,7 +154,44 @@ LevelEditor.prototype.selectLayer = function (index) {
 };
 
 LevelEditor.prototype.deleteLayer = function (index) {
-    this.tileMap.layers.splice(index, 1);
+    this.messaging.send('/app/editor/' + this.roomId, {
+        type: 'DeleteLayerOperation',
+        index: this.selectedLayer
+    });
+};
+
+LevelEditor.prototype.insertLayer = function () {
+    var self = this;
+
+    this.uibModal.open({
+        templateUrl: 'js/templates/insertLayerModal.html',
+        size: 'sm',
+        controller: function ($scope, $uibModalInstance) {
+            $scope.layerName = '';
+
+            $scope.cancel = function () {
+                $uibModalInstance.dismiss();
+            };
+            
+            $scope.ok = function () {
+                self.messaging.send('/app/editor/' + self.roomId, {
+                    type: 'InsertLayerOperation',
+                    index: self.selectedLayer,
+                    name: $scope.layerName
+                });
+                $uibModalInstance.close();
+            }
+        }
+    });
+
+};
+
+LevelEditor.prototype.moveLayer = function (index, dir) {
+    this.messaging.send('/app/editor/' + this.roomId, {
+        type: 'MoveLayerOperation',
+        index: index,
+        dir: dir
+    });
 };
 
 LevelEditor.prototype.selectTool = function (name) {
@@ -186,6 +245,7 @@ LevelEditor.prototype.initView = function () {
     this.stage.addChild(this.gridGraphics);
     this.stage.addChild(this.selectedTilesPreview);
     this.stage.addChild(this.cursorHover);
+    this.stage.addChild(this.annotationContainer);
 
     var self = this;
 
@@ -199,8 +259,29 @@ LevelEditor.prototype.initView = function () {
     this.render();
 };
 
+LevelEditor.prototype.drawAnnotations = function () {
+    this.annotationContainer.removeChildren(0, this.annotationContainer.children.length);
+
+    if(!this.showAnnotations)
+        return;
+
+    var self = this;
+
+    angular.forEach(self.annotations, function (value) {
+        var text = new PIXI.Text(value.text);
+        text.x = value.x;
+        text.y = value.y;
+        self.annotationContainer.addChild(text);
+    });
+
+};
+
 LevelEditor.prototype.drawGrid = function () {
     this.gridGraphics.clear();
+
+    if(!this.showGrid)
+        return;
+
     this.gridGraphics.beginFill(0xFF3300);
     this.gridGraphics.lineStyle(1, 0x0, 0.3);
     // draw grid
@@ -253,6 +334,7 @@ LevelEditor.prototype.render = function () {
     this.drawGrid();
     this.drawSelectedTilesPreview();
     this.drawCursor();
+    this.drawAnnotations();
 
     this.stage.position.set(this.viewPort.x, this.viewPort.y);
     this.stage.scale.set(this.viewPort.scale);

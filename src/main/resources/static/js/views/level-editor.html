@@ -54,6 +54,7 @@
                 <div ng-controller="TilesetCtrl" ng-mousemove="updateCursor($event)" ng-mousedown="mouseDown($event)" ng-mouseup="mouseUp($event)" id="tileset-view"></div>
               </uib-tab>
               <uib-tab index="1" heading="Layers">
+                <div><button class="btn btn-sm btn-success small-button" ng-click="editor.insertLayer()"><span class="fa fa-plus" aria-hidden="true"></span></button></div>
                 <div id="layer-view">
                   <ul class="list-group">
                     <li ng-click="editor.selectLayer($index)" class="list-group-item" ng-class="{'active': $index == editor.selectedLayer}"
@@ -61,6 +62,8 @@
                       <i ng-click="editor.deleteLayer($index)" class="fa fa-times pull-right" aria-hidden="true"></i>
                       <i ng-click="layer.visible = !layer.visible" class="fa pull-right"
                          ng-class="{'fa-eye': layer.visible, 'fa-eye-slash': !layer.visible}" aria-hidden="true"></i>
+                      <i ng-click="editor.moveLayer($index, -1)" class="fa fa-arrow-up pull-right" aria-hidden="true"></i>
+                      <i ng-click="editor.moveLayer($index, 1)" class="fa fa-arrow-down pull-right" aria-hidden="true"></i>
                     </li>
                   </ul>
                 </div>

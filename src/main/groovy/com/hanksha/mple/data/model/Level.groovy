@@ -1,6 +1,8 @@
 package com.hanksha.mple.data.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.hanksha.mple.data.model.request.SketchLine
+import groovy.transform.Canonical
 import groovy.transform.ToString
 
 import java.awt.Point
@@ -15,11 +17,11 @@ class Level {
     @JsonProperty
     TileMap tileMap
     @JsonProperty
-    LevelObject[] objects
+    List<LevelObject> objects
     @JsonProperty
-    Annotation[] annotations
+    List<Annotation> annotations
     @JsonProperty
-    SketchLine[] sketches
+    List<SketchLine> sketches
 
     Level() {}
 
@@ -32,28 +34,6 @@ class Level {
         objects = []
         annotations = []
         sketches = []
-    }
-
-    class Annotation {
-
-        @JsonProperty
-        String text
-        @JsonProperty
-        String color
-        @JsonProperty
-        Point position
-
-    }
-
-    class SketchLine {
-
-        @JsonProperty
-        String color
-        @JsonProperty
-        Point tail
-        @JsonProperty
-        Point head
-
     }
 
 }

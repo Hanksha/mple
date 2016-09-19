@@ -7,7 +7,11 @@ import com.hanksha.mple.data.model.Level
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = 'type')
 @JsonSubTypes([
-        @Type(value = TileOperation, name = 'tileOperation')
+        @Type(value = TileOperation, name = 'TileOperation'),
+        @Type(value = InsertLayerOperation, name = 'InsertLayerOperation'),
+        @Type(value = MoveLayerOperation, name = 'MoveLayerOperation'),
+        @Type(value = DeleteLayerOperation, name = 'DeleteLayerOperation'),
+        @Type(value = AddAnnotationOperation, name = 'AddAnnotationOperation'),
 ])
 interface LevelOperation {
 

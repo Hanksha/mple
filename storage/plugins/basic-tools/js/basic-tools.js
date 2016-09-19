@@ -10,12 +10,13 @@ app.run(function (Tools) {
     );
 
     function handle(event, editor) {
+        event.preventDefault();
         var tiles = editor.selectedTiles;
         var startRow = editor.cursor.row - Math.floor(tiles.length / 2);
         var startCol = editor.cursor.col - Math.floor(tiles[0].length / 2);
         
         editor.messaging.send('/app/editor/' + editor.roomId, {
-            type: 'tileOperation',
+            type: 'TileOperation',
             layerIndex: editor.selectedLayer,
             startRow: startRow,
             startCol: startCol,
@@ -35,7 +36,7 @@ app.run(function (Tools) {
 
     function handle(event, editor) {
         editor.messaging.send('/app/editor/' + editor.roomId, {
-            type: 'tileOperation',
+            type: 'TileOperation',
             layerIndex: editor.selectedLayer,
             startRow: editor.cursor.row,
             startCol: editor.cursor.col,
@@ -67,7 +68,11 @@ app.run(function (Tools) {
     );
 
     function handle(event, editor) {
-    }
+        var layer = editor.tileMap.layers[editor.selectedLayer];
+        var row = editor.cursor.row;
+        var col = editor.cursor.col;
+        editor.selectedTiles = [[layer.grid[row][col]]];
+    };
 });
 
 app.run(function (Tools) {
@@ -93,5 +98,26 @@ app.run(function (Tools) {
     );
 
     function handle(event, editor) {
+        editor.uibModal.open({
+            templateUrl: 'plugins/basic-tools/templates/addAnnotationModal.html',
+            size: 'sm',
+            controller: function ($scope, $uibModalInstance) {
+                $scope.text = '';
+                $scope.ok = function () {
+                    editor.messaging.send('/app/editor/' + editor.roomId, {
+                        type: 'AddAnnotationOperation',
+                        text: $scope.text,
+                        x: editor.mouse.x,
+                        y: editor.mouse.y
+                    });
+                    $uibModalInstance.close();
+                };
+
+                $scope.cancel = function () {
+                    $uibModalInstance.dismiss();
+                };
+            }
+
+        });
     }
 });

@@ -89,6 +89,7 @@ class RoomManager {
         if(!room)
             throw new RoomNotFoundException(roomId)
 
+        if(!room.users.any {it == username})
         room.users << username
     }
 
@@ -126,7 +127,7 @@ class RoomManager {
 
         operation.modify(room.level)
 
-        println room.level.dump()
+//        println room.level.dump()
 
         messaging.convertAndSend('/topic/editor/' + roomId,
                 [type: operation.class.simpleName, operation: operation])
