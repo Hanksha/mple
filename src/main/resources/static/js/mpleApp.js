@@ -205,10 +205,32 @@
         };
 
         $scope.download = function () {
-            
+            if($scope.selectedLevel == null)
+                return;
+
+            var version = 'latest';
+
+            if($scope.selectedCommit != null)
+                version = $scope.selectedCommit.name;
+
+            var anchor = angular.element('<a/>');
+            anchor.css({display: 'none'});
+            angular.element(document.body).append(anchor);
+
+            anchor.attr({
+                href:
+                '/api/projects/' + $scope.project.name + '/levels/' + $scope.selectedLevel.name + '?version=' + version,
+                target: '_blank',
+                download: $scope.selectedLevel.name + '-' + version + '.json'
+            })[0].click();
+
+            anchor.remove();
         };
         
         $scope.revert = function () {
+            if($scope.selectedCommit == null)
+                return;
+
             AlertService.addConfirmationAlert(
                 'Revert commit',
                 'Are you sure you want to revert commit ' + $scope.selectCommit.name + '?',

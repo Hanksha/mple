@@ -7,5 +7,5 @@ class InsertLayerOperation implements LevelOperation {
     void modify(Level level) {
 
     }
-    
+
 }

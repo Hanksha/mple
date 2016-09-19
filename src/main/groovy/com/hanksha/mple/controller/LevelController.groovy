@@ -29,7 +29,7 @@ class LevelController {
     LevelManager levelManager
 
     @RequestMapping(value = '/{name}', method = RequestMethod.GET)
-    ResponseEntity getLevel(@PathVariable String projectName, String name, @RequestParam String version) {
+    ResponseEntity getLevel(@PathVariable String projectName, @PathVariable String name, @RequestParam String version) {
         try {
             String level = levelManager.getLevelAsString(projectName, name, version)
             HttpHeaders headers = new HttpHeaders()
