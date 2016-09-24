@@ -14,14 +14,10 @@ app.run(function (Tools) {
         var tiles = editor.selectedTiles;
         var startRow = editor.cursor.row - Math.floor(tiles.length / 2);
         var startCol = editor.cursor.col - Math.floor(tiles[0].length / 2);
-        
-        editor.messaging.send('/app/editor/' + editor.roomId, {
-            type: 'TileOperation',
-            layerIndex: editor.selectedLayer,
-            startRow: startRow,
-            startCol: startCol,
-            tiles: tiles
-        });
+
+        editor.sendOperation(
+            LevelOperation.makeTileOperation(editor.selectedLayer, startRow, startCol, tiles)
+        );
     }
 });
 
@@ -35,19 +31,20 @@ app.run(function (Tools) {
     );
 
     function handle(event, editor) {
-        editor.messaging.send('/app/editor/' + editor.roomId, {
-            type: 'TileOperation',
-            layerIndex: editor.selectedLayer,
-            startRow: editor.cursor.row,
-            startCol: editor.cursor.col,
-            tiles: [[0]]
-        });
+        editor.sendOperation(
+            LevelOperation.makeTileOperation(
+                editor.selectedLayer,
+                editor.cursor.row,
+                editor.cursor.col,
+                [[0]]
+            )
+        );
     }
 });
 
 app.run(function (Tools) {
 
-    Tools.addTool(
+    /*Tools.addTool(
         'filler',
         'Filler Tool',
         'tint',
@@ -55,7 +52,7 @@ app.run(function (Tools) {
     );
 
     function handle(event, editor) {
-    }
+    }*/
 });
 
 app.run(function (Tools) {
@@ -72,12 +69,12 @@ app.run(function (Tools) {
         var row = editor.cursor.row;
         var col = editor.cursor.col;
         editor.selectedTiles = [[layer.grid[row][col]]];
-    };
+    }
 });
 
 app.run(function (Tools) {
 
-    Tools.addTool(
+    /*Tools.addTool(
         'sketcher',
         'Sketching Tool',
         'pencil-square-o',
@@ -85,7 +82,8 @@ app.run(function (Tools) {
     );
 
     function handle(event, editor) {
-    }
+        
+    }*/
 });
 
 app.run(function (Tools) {
@@ -104,12 +102,8 @@ app.run(function (Tools) {
             controller: function ($scope, $uibModalInstance) {
                 $scope.text = '';
                 $scope.ok = function () {
-                    editor.messaging.send('/app/editor/' + editor.roomId, {
-                        type: 'AddAnnotationOperation',
-                        text: $scope.text,
-                        x: editor.mouse.x,
-                        y: editor.mouse.y
-                    });
+                    editor.sendOperation(
+                        LevelOperation.makeAddAnnotationOperation($scope.text, editor.mouse.x, editor.mouse.y));
                     $uibModalInstance.close();
                 };
 

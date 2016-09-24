@@ -4,10 +4,42 @@
         'ngRoute', 'ui.bootstrap', 'ngAnimate', 'ngFileUpload', 'base64', 'ngStomp',
         'ngCookies', 'ngSanitize', 'monospaced.mousewheel', 'cfp.hotkeys']);
     
-    app.controller('MainCtrl', function ($scope, $location, MessagingService) {
+    app.controller('MainCtrl', function ($scope, $location, $uibModal, AuthService, UserService, MessagingService, AlertService) {
         $scope.go = function (path) {
-            $location.path(path)
-        }
+            $location.path(path);
+        };
+
+        $scope.openProfile = function () {
+            $uibModal.open({
+                templateUrl: 'js/templates/profileModal.html',
+                controller: function ($scope, $uibModalInstance) {
+                    $scope.username = AuthService.getUsername();
+                    $scope.roles = AuthService.getRoles();
+
+                    $scope.oldPassword = '';
+                    $scope.newPassword = '';
+                    $scope.newPasswordConfirmed = '';
+
+                    $scope.close = function () {
+                        $uibModalInstance.dismiss();
+                    };
+
+                    $scope.save = function () {
+                        UserService.changePassword($scope.oldPassword, $scope.newPassword, $scope.newPasswordConfirmed)
+                            .success(function () {
+                                $scope.oldPassword = '';
+                                $scope.newPassword = '';
+                                $scope.newPasswordConfirmed = '';
+                                AlertService.addPopUpAlert('Success', 'Password modified', 'success');
+                            })
+                            .error(function (data) {
+                                AlertService.addPopUpAlert('Error', data, 'danger');
+                            })
+                    };
+                },
+                scope: $scope
+            });
+        };
     });
 
     app.controller('HomeCtrl', function ($scope, AuthService) {
@@ -672,6 +704,18 @@
         }
     });
 
+    app.factory('UserService', function ($http, AuthService) {
+        return {
+            changePassword: function (oldPassword, newPassword, newPasswordConfirmed) {
+                return $http.post('/api/users/' + AuthService.getUsername(), {
+                    oldPassword: oldPassword,
+                    newPassword: newPassword,
+                    newPasswordConfirmed: newPasswordConfirmed
+                });
+            }
+        };
+    });
+
     app.factory('AlertService', function ($http, $uibModal, MessagingService) {
 
         var alerts = [];
@@ -879,7 +923,9 @@
 
         function subscribe(path, callback) {
             if(!connected) {
+                $log.debug('not connected');
                 subscriptionQueue.push({path: path, callback: callback});
+                connect();
                 return;
             }
 

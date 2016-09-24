@@ -32,6 +32,7 @@ TileMap.prototype.insertLayer = function (index, name) {
         visible: true,
         name: name
     });
+
 };
 
 TileMap.prototype.setTileId = function (layerIndex, tileIds, row, col) {

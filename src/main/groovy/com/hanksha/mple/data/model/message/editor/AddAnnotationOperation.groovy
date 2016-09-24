@@ -11,8 +11,10 @@ class AddAnnotationOperation implements LevelOperation {
     int y
     String text
 
-    void modify(Level level) {
+    boolean modify(Level level) {
         level.annotations.add(new Annotation(text: text, x: x, y: y))
+
+        return true
     }
 
 }

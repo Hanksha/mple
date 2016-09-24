@@ -125,9 +125,8 @@ class RoomManager {
         if(!room.users.any {it == username})
             return
 
-        operation.modify(room.level)
-
-//        println room.level.dump()
+        if(!operation.modify(room.level))
+            return
 
         messaging.convertAndSend('/topic/editor/' + roomId,
                 [type: operation.class.simpleName, operation: operation])

@@ -8,8 +8,13 @@ class DeleteLayerOperation implements LevelOperation {
 
     int index
 
-    void modify(Level level) {
+    boolean modify(Level level) {
+        if(index < 0  || index >= level.tileMap.layers.size())
+            return false
+
         level.tileMap.layers.remove(index)
+
+        return true
     }
 
 }

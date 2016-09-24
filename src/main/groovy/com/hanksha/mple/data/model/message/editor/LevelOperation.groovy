@@ -12,9 +12,10 @@ import com.hanksha.mple.data.model.Level
         @Type(value = MoveLayerOperation, name = 'MoveLayerOperation'),
         @Type(value = DeleteLayerOperation, name = 'DeleteLayerOperation'),
         @Type(value = AddAnnotationOperation, name = 'AddAnnotationOperation'),
+        @Type(value = RemoveAnnotationOperation, name = 'RemoveAnnotationOperation'),
 ])
 interface LevelOperation {
 
-    void modify(Level level)
+    boolean modify(Level level)
 
 }

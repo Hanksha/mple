@@ -11,14 +11,19 @@ class InsertLayerOperation implements LevelOperation {
     int index
     String name
 
-    void modify(Level level) {
+    boolean modify(Level level) {
         TileMap tileMap = level.tileMap
 
         List<Layer> layers = tileMap.layers
 
+        if(index < 0  || index >= layers.size())
+            return false
+
         Layer layer = new Layer(name, tileMap.height, tileMap.width)
 
         layers.add(index, layer)
+
+        return true
     }
 
 }

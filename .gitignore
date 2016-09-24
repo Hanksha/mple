@@ -7,7 +7,8 @@ mvnw
 /target
 .directory
 /bower_components
-/storage
+/storage/tilesets
+/storage/projects
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/

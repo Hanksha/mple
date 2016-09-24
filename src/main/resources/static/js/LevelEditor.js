@@ -27,6 +27,8 @@ function LevelEditor($routeParams, $log, hotkeys, $location, $uibModal,
     this.showGrid = true;
     this.showAnnotations = true;
     this.showSketches = true;
+    this.refreshAnnotations = true;
+    this.refreshTiles = true;
 
     this.renderer = null;
     this.stage = new PIXI.Container();
@@ -73,8 +75,6 @@ function LevelEditor($routeParams, $log, hotkeys, $location, $uibModal,
 
     RoomService.getRoomLevel($routeParams.roomId).success(function (data) {
         self.level = data;
-        console.log(data);
-        console.log(data.tileMap);
         self.tileMap = new TileMap(
             data.tileMap.width,
             data.tileMap.height,
@@ -82,8 +82,6 @@ function LevelEditor($routeParams, $log, hotkeys, $location, $uibModal,
             data.tileMap.tileHeight,
             data.tileMap.layers
         );
-        console.log(self.tileMap);
-        console.log(self.level.tileset);
         self.annotations = data.annotations;
         self.level.tileMap = self.tileMap;
         self.objects = self.level.objects;
@@ -94,19 +92,24 @@ function LevelEditor($routeParams, $log, hotkeys, $location, $uibModal,
     MessagingService.subscribe('/topic/editor/' + this.roomId, function (payload, headers, res) {
         var operation = payload.operation;
         if(payload.type == 'TileOperation') {
+            self.refreshTiles = true;
             self.tileMap.setTileId(operation.layerIndex, operation.tiles, operation.startRow, operation.startCol);
         }
-        else if(payload.type = 'AddAnnotationOperation') {
-            console.log(self.level);
+        else if(payload.type == 'AddAnnotationOperation') {
+            self.refreshAnnotations = true;
             self.annotations.push(operation);
         }
-        else if(payload.type = 'InsertLayerOperation') {
+        else if(payload.type == 'RemoveAnnotationOperation') {
+            self.refreshAnnotations = true;
+            self.annotations.splice(operation.index, 1);
+        }
+        else if(payload.type == 'InsertLayerOperation') {
             self.tileMap.insertLayer(operation.index, operation.name);
         }
-        else if(payload.type = 'DeleteLayerOperation') {
-            self.deleteLayer(operation.index);
+        else if(payload.type == 'DeleteLayerOperation') {
+            self.tileMap.layers.splice(operation.index, 1);
         }
-        else if(payload.type = 'MoveLayerOperation') {
+        else if(payload.type == 'MoveLayerOperation') {
             var layer = self.level.tileMap.layers[operation.index];
             self.level.tileMap.layers[operation.index] = self.level.tileMap.layers[operation.index + operation.dir];
             self.level.tileMap.layers[operation.index + operation.dir] = layer;
@@ -154,15 +157,11 @@ LevelEditor.prototype.selectLayer = function (index) {
 };
 
 LevelEditor.prototype.deleteLayer = function (index) {
-    this.messaging.send('/app/editor/' + this.roomId, {
-        type: 'DeleteLayerOperation',
-        index: this.selectedLayer
-    });
+    this.sendOperation(LevelOperation.makeDeleteLayerOperation(index));
 };
 
 LevelEditor.prototype.insertLayer = function () {
     var self = this;
-
     this.uibModal.open({
         templateUrl: 'js/templates/insertLayerModal.html',
         size: 'sm',
@@ -174,11 +173,7 @@ LevelEditor.prototype.insertLayer = function () {
             };
             
             $scope.ok = function () {
-                self.messaging.send('/app/editor/' + self.roomId, {
-                    type: 'InsertLayerOperation',
-                    index: self.selectedLayer,
-                    name: $scope.layerName
-                });
+                self.sendOperation(LevelOperation.makeInsertLayerOperation(self.selectedLayer, $scope.layerName));
                 $uibModalInstance.close();
             }
         }
@@ -187,11 +182,7 @@ LevelEditor.prototype.insertLayer = function () {
 };
 
 LevelEditor.prototype.moveLayer = function (index, dir) {
-    this.messaging.send('/app/editor/' + this.roomId, {
-        type: 'MoveLayerOperation',
-        index: index,
-        dir: dir
-    });
+    this.sendOperation(LevelOperation.makeMoveLayerOperation(index, dir));
 };
 
 LevelEditor.prototype.selectTool = function (name) {
@@ -260,20 +251,42 @@ LevelEditor.prototype.initView = function () {
 };
 
 LevelEditor.prototype.drawAnnotations = function () {
+    if(!this.refreshAnnotations)
+        return;
+
     this.annotationContainer.removeChildren(0, this.annotationContainer.children.length);
 
     if(!this.showAnnotations)
         return;
 
     var self = this;
-
+    var index = 0;
     angular.forEach(self.annotations, function (value) {
         var text = new PIXI.Text(value.text);
         text.x = value.x;
-        text.y = value.y;
+        text.y = value.y; 
+
+        var cross = new PIXI.Text('x');
+        cross.x = value.x - 18;
+        cross.y = value.y - 18;
+        cross.interactive = true;
+
+        cross.on('mousedown', function () {
+            var _index = index;
+            self.removeAnnotation(0);
+        });
+
         self.annotationContainer.addChild(text);
+        self.annotationContainer.addChild(cross);
+
+        index++;
     });
 
+    this.refreshAnnotations = false;
+};
+
+LevelEditor.prototype.removeAnnotation = function (index) {
+    this.sendOperation(LevelOperation.makeRemoveAnnotationOperation(index));
 };
 
 LevelEditor.prototype.drawGrid = function () {
@@ -298,6 +311,10 @@ LevelEditor.prototype.drawGrid = function () {
 
 LevelEditor.prototype.drawSelectedTilesPreview = function () {
     this.selectedTilesPreview.removeChildren(0, this.selectedTilesPreview.children.length);
+
+    if(this.activeTool.name != 'brush')
+        return;
+
     var startRow = this.cursor.row - Math.floor(this.selectedTiles.length / 2);
     var startCol = this.cursor.col - Math.floor(this.selectedTiles[0].length / 2);
 
@@ -342,6 +359,61 @@ LevelEditor.prototype.render = function () {
     this.renderer.render(this.stage);
 };
 
+LevelEditor.prototype.sendOperation = function(operation) {
+    this.messaging.send('/app/editor/' + this.roomId, operation);
+};
+
+function LevelOperation() {}
+
+LevelOperation.makeTileOperation = function (layerIndex, row, col, tiles) {
+    return {
+        type: 'TileOperation',
+        layerIndex: layerIndex,
+        startRow: row,
+        startCol: col,
+        tiles: tiles
+    };
+};
+
+LevelOperation.makeInsertLayerOperation = function (index, name) {
+    return {
+        type: 'InsertLayerOperation',
+        index: index,
+        name: name
+    };
+};
+
+LevelOperation.makeMoveLayerOperation = function (index, dir) {
+    return {
+        type: 'MoveLayerOperation',
+        index: index,
+        dir: dir
+    };
+};
+
+LevelOperation.makeDeleteLayerOperation = function (index) {
+    return {
+        type: 'DeleteLayerOperation',
+        index: index
+    };
+};
+
+LevelOperation.makeRemoveAnnotationOperation = function (index) {
+    return {
+        type: 'RemoveAnnotationOperation',
+        index: index
+    };
+};
+
+LevelOperation.makeAddAnnotationOperation = function (text, x, y) {
+    return {
+        type: 'AddAnnotationOperation',
+        text: text,
+        x: x,
+        y: y
+    };
+};
+
 function LevelRenderer(renderer, level) {
     this.renderer = renderer;
     this.level = level;
@@ -355,7 +427,10 @@ function LevelRenderer(renderer, level) {
 }
 
 LevelRenderer.prototype.refresh = function (viewPort) {
+
     this.tileMapRenderer.refresh(viewPort);
+    this.refreshTiles = false;
+
     // this.objectRenderer.refresh(viewPort);
 };
 

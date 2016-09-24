@@ -11,11 +11,13 @@ class TileOperation implements LevelOperation {
     int startCol
     int[][] tiles
 
-    void modify(Level level) {
+    boolean modify(Level level) {
         int[][] grid = level.tileMap.layers[layerIndex]?.grid
 
-        if(!grid)
-            return
+        if(!grid ||
+            startRow < 0 || startRow >= grid.length ||
+            startCol < 0 || startCol >= grid[0].length)
+            return false
 
         int mapRow, mapCol
 
@@ -30,5 +32,7 @@ class TileOperation implements LevelOperation {
                 grid[mapRow][mapCol] = tiles[row][col]
             }
         }
+
+        return true;
     }
 }
