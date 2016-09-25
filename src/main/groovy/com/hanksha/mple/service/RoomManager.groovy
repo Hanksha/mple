@@ -3,6 +3,7 @@ package com.hanksha.mple.service
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.hanksha.mple.data.model.Level
 import com.hanksha.mple.data.model.Room
+import com.hanksha.mple.data.model.message.AlertMessage
 import com.hanksha.mple.data.model.message.editor.LevelOperation
 import com.hanksha.mple.exception.ConcurrentLevelModificationException
 import com.hanksha.mple.exception.ForbiddenRoomAccessException
@@ -65,7 +66,7 @@ class RoomManager {
 
         Room room = new Room(name: roomName, projectName: projectName)
 
-        room.id = currentIndex++
+        room.id = currentIndex
 
         room.users = [username]
 
@@ -73,51 +74,70 @@ class RoomManager {
 
         rooms << room
 
+        AlertMessage alertMessage = new AlertMessage(message: "$username created room '$roomName'", type: 'info')
+        messaging.convertAndSend('/topic/alerts', alertMessage)
+
+        currentIndex++
+
         room
     }
 
     void destroyRoom(int roomId) {
-        rooms.removeAll {it.id = roomId}
+        rooms.removeAll {it.id == roomId}
 
         if(!rooms)
             currentIndex = 1
     }
 
     void connectToRoom(int roomId, String username) {
-        Room room = rooms.find {it.id = roomId}
+        Room room = rooms.find {it.id == roomId}
 
         if(!room)
             throw new RoomNotFoundException(roomId)
 
-        if(!room.users.any {it == username})
-        room.users << username
+        if(!room.users.any {it == username}) {
+            room.users << username
+            AlertMessage alertMessage = new AlertMessage(message: "$username joined room '${room.name}'", type: 'info')
+            messaging.convertAndSend('/topic/alerts', alertMessage)
+        }
+    }
+
+    void disconnectUser(String username) {
+        for(room in rooms)
+            room.users.removeAll({it == username})
     }
 
     void disconnectFromRoom(int roomId, String username) {
-        Room room = rooms.find {it.id = roomId}
+        Room room = rooms.find {it.id == roomId}
 
         if(!room)
             throw new RoomNotFoundException(roomId)
 
         room.users.removeAll {it == username}
 
+        AlertMessage alertMessage = new AlertMessage(message: "$username left room '${room.name}'", type: 'info')
+        messaging.convertAndSend('/topic/alerts', alertMessage)
+
         if(!room.users)
             destroyRoom(room.id)
     }
 
     void commitRoom(int roomId, String commitMessage, String username) {
-        Room room = rooms.find {it.id = roomId}
+        Room room = rooms.find {it.id == roomId}
 
         if(!room)
             throw new RoomNotFoundException(roomId)
 
         String authors = room.users.join(', ')
 
+        AlertMessage alertMessage = new AlertMessage(message: "New commit on ${room.projectName}/${room.levelName} by $authors", type: 'success')
+        messaging.convertAndSend('/topic/alerts', alertMessage)
+
         levelManager.commit(room.projectName, commitMessage, authors, room.level)
     }
 
     void handleOperation(int roomId, LevelOperation operation, String username) {
-        Room room = rooms.find {it.id = roomId}
+        Room room = rooms.find {it.id == roomId}
 
         if(!room)
             throw new RoomNotFoundException(roomId)

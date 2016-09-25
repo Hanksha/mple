@@ -1,4 +1,4 @@
-package com.hanksha.mple.data.model.request
+package com.hanksha.mple.data.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import groovy.transform.Canonical

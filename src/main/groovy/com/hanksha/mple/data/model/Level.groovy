@@ -1,11 +1,7 @@
 package com.hanksha.mple.data.model
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.hanksha.mple.data.model.request.SketchLine
-import groovy.transform.Canonical
 import groovy.transform.ToString
-
-import java.awt.Point
 
 @ToString
 class Level {

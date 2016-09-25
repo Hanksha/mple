@@ -4,7 +4,7 @@
         'ngRoute', 'ui.bootstrap', 'ngAnimate', 'ngFileUpload', 'base64', 'ngStomp',
         'ngCookies', 'ngSanitize', 'monospaced.mousewheel', 'cfp.hotkeys']);
     
-    app.controller('MainCtrl', function ($scope, $location, $uibModal, AuthService, UserService, MessagingService, AlertService) {
+    app.controller('MainCtrl', function ($scope, $rootScope, $location, $uibModal, AuthService, UserService, MessagingService, AlertService) {
         $scope.go = function (path) {
             $location.path(path);
         };
@@ -40,6 +40,74 @@
                 scope: $scope
             });
         };
+
+        $scope.openAdmin = function () {
+            $uibModal.open({
+                templateUrl: 'js/templates/adminModal.html',
+                controller: function ($scope, $uibModalInstance) {
+                    $scope.cancel = function () {
+                        $uibModalInstance.dismiss();
+                    };
+
+                    $scope.refresh = function () {
+                        UserService.getUsers().success(function (data) {
+                            $scope.users = data;
+                        })
+                    };
+
+                    $scope.refresh();
+
+                    $scope.selectedUser = null;
+
+                    $scope.selectUser = function (username) {
+                        $scope.selectedUser = username;
+                    };
+
+                    $scope.addUser = function () {
+                        $uibModal.open({
+                            templateUrl: 'js/templates/createUserModal.html',
+                            size: 'sm',
+                            controller: function($scope, $uibModalInstance) {
+                                $scope.cancel = function () {
+                                    $uibModalInstance.dismiss();
+                                };
+
+                                $scope.user = {
+                                    username: '',
+                                    password: ''
+                                };
+
+                                $scope.add = function () {
+                                    UserService.saveUser($scope.user).success(function () {
+                                        $uibModalInstance.close();
+                                        $scope.refresh();
+                                        AlertService.addPopUpAlert('Success', 'User created', 'success');
+                                    })
+                                };
+                            },
+                            scope: $scope
+                        });
+                    };
+
+                    $scope.deleteUser = function () {
+                        AlertService.addConfirmationAlert(
+                            'Delete User', 'Are you sure you want to delete ' + $scope.selectedUser + '?',
+                            function () {
+                                UserService.deleteUser($scope.selectedUser).success(function () {
+                                    $scope.refresh();
+                                })
+                            }, function () {})
+                    };
+                },
+                scope: $scope
+            });
+        };
+        
+        $scope.resetAlertCount = function () {
+            $rootScope.newAlerts = 0;
+        };
+
+        $scope.resetAlertCount();
     });
 
     app.controller('HomeCtrl', function ($scope, AuthService) {
@@ -476,14 +544,15 @@
         var scale = 1;
 
         function initView() {
-            renderer = PIXI.autoDetectRenderer($('#tileset-view').width() - 8, $('#tileset-view').width(), {backgroundColor: 0xEFEFEF, autoResize: true});
+            renderer = PIXI.autoDetectRenderer(
+                tileset.tileWidth * tileset.numCol,
+                tileset.tileHeight * tileset.numRow,
+                {backgroundColor: 0xEFEFEF, autoResize: true});
+
+            $('#tileset-view').empty();
             $('#tileset-view').append(renderer.view);
 
-            $('#tileset-view').onresize = function (event){
-                var view = $('#tileset-view');
-                renderer.resize(view.width(), view.width());
-            };
-
+            $('.view-container').perfectScrollbar();
 
             cursorShape = new PIXI.Graphics(0, 0, tileset.tileWidth, tileset.tileHeight);
             gridContainer.addChild(cursorShape);
@@ -535,7 +604,7 @@
         }
 
         var firstPos = {row: 0, col: 0};
-        var secondPos = {row: 2, col: 2};
+        var secondPos = {row: 0, col: 0};
 
         $scope.mouseDown = function (event) {
             firstPos = {row: cursor.row, col: cursor.col};
@@ -706,17 +775,34 @@
 
     app.factory('UserService', function ($http, AuthService) {
         return {
-            changePassword: function (oldPassword, newPassword, newPasswordConfirmed) {
-                return $http.post('/api/users/' + AuthService.getUsername(), {
-                    oldPassword: oldPassword,
-                    newPassword: newPassword,
-                    newPasswordConfirmed: newPasswordConfirmed
-                });
-            }
+            getUsers: getUsers,
+            saveUser: saveUser,
+            deleteUser: deleteUser,
+            changePassword: changePassword
         };
+
+        function getUsers() {
+            return $http.get('/api/users');
+        }
+        
+        function saveUser(user) {
+            return $http.post('/api/users', user);
+        }
+
+        function deleteUser(username) {
+            return $http.delete('/api/users/' + username);
+        }
+
+        function changePassword(oldPassword, newPassword, newPasswordConfirmed) {
+            return $http.post('/api/users/' + AuthService.getUsername(), {
+                oldPassword: oldPassword,
+                newPassword: newPassword,
+                newPasswordConfirmed: newPasswordConfirmed
+            });
+        }
     });
 
-    app.factory('AlertService', function ($http, $uibModal, MessagingService) {
+    app.factory('AlertService', function ($http, $rootScope, $uibModal, MessagingService) {
 
         var alerts = [];
 
@@ -788,6 +874,7 @@
 
         function receiveAlerts(payload, headers, res) {
             addAlert(payload.message, payload.type);
+            $rootScope.newAlerts++;
         }
     });
 
@@ -826,12 +913,13 @@
             listTools: listTools
         };
         
-        function addTool(name, tooltip, icon, handle) {
+        function addTool(name, tooltip, icon, handle, optionTemplate) {
             tools[name] = {
                 name: name,
                 tooltip: tooltip,
                 icon: icon,
-                handle: handle
+                handle: handle,
+                optionTemplate: optionTemplate
             }
         }
 
@@ -903,6 +991,8 @@
                 });
 
                 subscriptionQueue = [];
+            }, function () {
+                connecting = false;
             });
         }
 
@@ -933,7 +1023,7 @@
         }
     });
 
-    app.factory('AuthService', function ($cookies, $http, MessagingService, AlertService, $location) {
+    app.factory('AuthService', function ($cookies, $rootScope, $http, MessagingService, AlertService, $location) {
 
         return {
             isAuthenticated: isAuthenticated,
@@ -963,6 +1053,14 @@
                 {headers: {'Content-Type': 'application/x-www-form-urlencoded'}})
                 .success(function () {
                     $cookies.put('authenticated', 'true');
+                    $rootScope.currentUsername = getUsername();
+                    $rootScope.currentUserRoles = getRoles();
+
+                    angular.forEach($rootScope.currentUserRoles, function (value) {
+                       if(value == 'ROLE_ADMIN')
+                           $rootScope.currentIsAdmin = true;
+                    });
+
                     MessagingService.connect();
                     AlertService.addPopUpAlert('Login successful', 'Welcome.', 'success');
                     $location.path('/');
@@ -982,7 +1080,7 @@
             $http.post('/logout', '')
                 .success(function () {
                     loggedout();
-                    AlertService.addPopUpAlert('Logout successful', 'Welcome.', 'success');
+                    AlertService.addPopUpAlert('Logout successful', 'Bye!', 'success');
                 })
                 .error(function () {
                     AlertService.addPopUpAlert('Logout failed', 'Could not logout', 'info');

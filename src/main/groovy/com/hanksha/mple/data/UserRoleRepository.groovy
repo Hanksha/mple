@@ -4,4 +4,5 @@ interface UserRoleRepository {
 
     List<String> findRoles(String username)
 
+    void save(String username, String role)
 }

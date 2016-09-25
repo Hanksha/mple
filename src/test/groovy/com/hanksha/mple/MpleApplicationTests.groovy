@@ -10,6 +10,7 @@ import org.apache.commons.io.FileUtils
 import org.junit.After
 import org.junit.Before
 import org.junit.FixMethodOrder
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.MethodSorters
@@ -41,6 +42,7 @@ import static org.hamcrest.Matchers.*
 @FixMethodOrder(MethodSorters.JVM)
 @SpringBootTest
 @WebAppConfiguration
+@Ignore
 class MpleApplicationTests {
 
 	@Autowired
@@ -77,7 +79,7 @@ class MpleApplicationTests {
 		}
 	}
 
-	@Test
+	/*@Test
 	void createProjectRequest() {
 		mockMvc.perform(post('/api/projects')
 				.with(authentication(auth))
@@ -105,5 +107,5 @@ class MpleApplicationTests {
 	void testObjectMapper() {
 		String json = '{"type":"tileOperation", "layerIndex": 0, "startRow": 0, "startCol": 0, "tiles": [[0]]}'
 		assert objectMapper.readValue(json, LevelOperation).class == TileOperation
-	}
+	}*/
 }

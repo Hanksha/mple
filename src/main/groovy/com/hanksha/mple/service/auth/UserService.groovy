@@ -6,6 +6,6 @@ import org.springframework.security.web.authentication.logout.LogoutSuccessHandl
 
 interface UserService extends AuthenticationSuccessHandler, LogoutSuccessHandler {
 
-    List<User> getAllUsers()
+    List<User> getAllActiveUsers()
 
 }

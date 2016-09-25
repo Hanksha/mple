@@ -13,6 +13,9 @@ import com.hanksha.mple.data.model.Level
         @Type(value = DeleteLayerOperation, name = 'DeleteLayerOperation'),
         @Type(value = AddAnnotationOperation, name = 'AddAnnotationOperation'),
         @Type(value = RemoveAnnotationOperation, name = 'RemoveAnnotationOperation'),
+        @Type(value = MoveAnnotationOperation, name = 'MoveAnnotationOperation'),
+        @Type(value = DrawSketchOperation, name = 'DrawSketchOperation'),
+        @Type(value = RemoveSketchOperation, name = 'RemoveSketchOperation')
 ])
 interface LevelOperation {
 

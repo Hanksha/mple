@@ -8,6 +8,7 @@ function LevelEditor($routeParams, $log, hotkeys, $location, $uibModal,
     this.tileMap = null;
     this.objects = null;
     this.annotations = [];
+    this.sketches = [];
 
     this.tools = Tools;
     this.messaging = MessagingService;
@@ -22,6 +23,7 @@ function LevelEditor($routeParams, $log, hotkeys, $location, $uibModal,
     this.cursor = new Cursor();
     this.viewPort = new ViewPort();
     this.activeTool = Tools.getTool('brush');
+    this.toolOptions = {};
     this.selectedTiles = [[0]];
     this.selectedLayer = 0;
     this.showGrid = true;
@@ -35,6 +37,7 @@ function LevelEditor($routeParams, $log, hotkeys, $location, $uibModal,
     this.annotationContainer = new PIXI.Container();
     this.selectedTilesPreview = new PIXI.Container();
     this.gridGraphics = new PIXI.Graphics();
+    this.sketchGraphics = new PIXI.Graphics();
     this.cursorHover = new PIXI.Graphics();
     this.levelRenderer = null;
 
@@ -83,6 +86,7 @@ function LevelEditor($routeParams, $log, hotkeys, $location, $uibModal,
             data.tileMap.layers
         );
         self.annotations = data.annotations;
+        self.sketches = data.sketches;
         self.level.tileMap = self.tileMap;
         self.objects = self.level.objects;
 
@@ -103,6 +107,11 @@ function LevelEditor($routeParams, $log, hotkeys, $location, $uibModal,
             self.refreshAnnotations = true;
             self.annotations.splice(operation.index, 1);
         }
+        else if(payload.type == 'MoveAnnotationOperation') {
+            self.refreshAnnotations = true;
+            self.annotations[operation.index].x = operation.x;
+            self.annotations[operation.index].y = operation.y;
+        }
         else if(payload.type == 'InsertLayerOperation') {
             self.tileMap.insertLayer(operation.index, operation.name);
         }
@@ -113,6 +122,23 @@ function LevelEditor($routeParams, $log, hotkeys, $location, $uibModal,
             var layer = self.level.tileMap.layers[operation.index];
             self.level.tileMap.layers[operation.index] = self.level.tileMap.layers[operation.index + operation.dir];
             self.level.tileMap.layers[operation.index + operation.dir] = layer;
+        }
+        else if(payload.type == 'DrawSketchOperation') {
+            self.sketches.push(
+                {
+                    head: {
+                        x: operation.x2,
+                        y: operation.y2
+                    },
+                    tail: {
+                        x: operation.x1,
+                        y: operation.y1
+                    }
+                }
+            );
+        }
+        else if(payload.type == 'RemoveSketchOperation') {
+            self.removeSketchLine(operation.index);
         }
 
     });
@@ -185,7 +211,16 @@ LevelEditor.prototype.moveLayer = function (index, dir) {
     this.sendOperation(LevelOperation.makeMoveLayerOperation(index, dir));
 };
 
+LevelEditor.prototype.removeAnnotation = function (index) {
+    this.sendOperation(LevelOperation.makeRemoveAnnotationOperation(index));
+};
+
+LevelEditor.prototype.removeSketchLine = function (index) {
+    this.sketches.splice(index, 1);
+};
+
 LevelEditor.prototype.selectTool = function (name) {
+    this.toolOptions = {};
     this.activeTool = this.tools.getTool(name);
 };
 
@@ -195,6 +230,7 @@ LevelEditor.prototype.updateMouse = function (event) {
     event.offsetY = Math.floor((event.offsetY - this.viewPort.y) / this.viewPort.scale);
 
     this.mouse.set(event.offsetX, event.offsetY);
+    this.mouse.setDir(event.originalEvent.movementX, event.originalEvent.movementY);
     this.cursor.set(event.offsetX, event.offsetY, this.tileMap.tileWidth, this.tileMap.tileHeight);
 };
 
@@ -225,29 +261,58 @@ LevelEditor.prototype.mouseWheelEvent = function (event, delta, deltaX, deltaY) 
     this.offsetY += (this.mouse.y - newY);
 };
 
+LevelEditor.prototype.setShowGrid = function () {
+    this.showGrid = !this.showGrid;
+    this.gridGraphics.visible = this.showGrid;
+};
+
+LevelEditor.prototype.setShowAnnotations = function () {
+    this.showAnnotations = !this.showAnnotations;
+    this.annotationContainer.visible = this.showAnnotations;
+};
+
+LevelEditor.prototype.setShowSketches = function () {
+    this.showSketches = !this.showSketches;
+    this.sketchGraphics.visible = this.showSketches;
+};
+
 /* Rendering */
 LevelEditor.prototype.initView = function () {
-    this.renderer = PIXI.autoDetectRenderer($('#level-view').width() - 8, $(window).height(), {backgroundColor: 0xEFEFEF, autoResize: true});
+    this.renderer = PIXI.autoDetectRenderer(
+        this.tileMap.tileWidth * this.tileMap.width,
+        this.tileMap.tileHeight * this.tileMap.height,
+        {backgroundColor: 0xEFEFEF, autoResize: true});
+
+    $('#level-view').empty();
     $('#level-view').append(this.renderer.view);
 
     this.levelRenderer = new LevelRenderer(this.renderer, this.level);
 
     this.stage.addChild(this.levelRenderer.container);
     this.stage.addChild(this.gridGraphics);
+    this.stage.addChild(this.sketchGraphics);
     this.stage.addChild(this.selectedTilesPreview);
     this.stage.addChild(this.cursorHover);
     this.stage.addChild(this.annotationContainer);
 
     var self = this;
 
-    window.onresize = function (event){
-        var view = $('#level-view');
-        self.renderer.resize(view.width(), $(window).height());
-    };
-
     this.loaded = true;
 
     this.render();
+};
+
+LevelEditor.prototype.drawSketches = function () {
+    this.sketchGraphics.clear();
+    this.sketchGraphics.beginFill(0xDE0F0F);
+    this.sketchGraphics.lineStyle(5, 0xDE0F0F, 0.6);
+
+    var self = this;
+    angular.forEach(this.level.sketches, function (value) {
+        self.sketchGraphics.moveTo(value.tail.x, value.tail.y);
+        self.sketchGraphics.lineTo(value.head.x, value.head.y);
+    });
+    this.sketchGraphics.endFill();
 };
 
 LevelEditor.prototype.drawAnnotations = function () {
@@ -256,28 +321,51 @@ LevelEditor.prototype.drawAnnotations = function () {
 
     this.annotationContainer.removeChildren(0, this.annotationContainer.children.length);
 
-    if(!this.showAnnotations)
-        return;
-
     var self = this;
     var index = 0;
     angular.forEach(self.annotations, function (value) {
+        var _index = index;
         var text = new PIXI.Text(value.text);
         text.x = value.x;
-        text.y = value.y; 
+        text.y = value.y;
+        text.interactive = true;
 
-        var cross = new PIXI.Text('x');
-        cross.x = value.x - 18;
-        cross.y = value.y - 18;
-        cross.interactive = true;
-
-        cross.on('mousedown', function () {
-            var _index = index;
-            self.removeAnnotation(0);
+        text.on('mousedown', function () {
+            this.dragging = true;
         });
 
+        text.on('mouseup', function () {
+            this.dragging = false;
+
+            if(self.activeTool.name != 'annotater')
+                return;
+
+            if(self.toolOptions == 'move') {
+                self.sendOperation(
+                    LevelOperation.makeMoveAnnotationOperation(
+                        _index,
+                        this.x,
+                        this.y));
+            }
+            else if(self.toolOptions == 'delete') {
+                self.removeAnnotation(_index);
+            }
+
+        });
+
+        text.on('mousemove', function () {
+            if(self.activeTool.name != 'annotater' || self.toolOptions != 'move')
+                return;
+
+            if(!this.dragging)
+                return;
+
+            text.x += self.mouse.dx;
+            text.y += self.mouse.dy;
+        });
+
+
         self.annotationContainer.addChild(text);
-        self.annotationContainer.addChild(cross);
 
         index++;
     });
@@ -285,16 +373,8 @@ LevelEditor.prototype.drawAnnotations = function () {
     this.refreshAnnotations = false;
 };
 
-LevelEditor.prototype.removeAnnotation = function (index) {
-    this.sendOperation(LevelOperation.makeRemoveAnnotationOperation(index));
-};
-
 LevelEditor.prototype.drawGrid = function () {
     this.gridGraphics.clear();
-
-    if(!this.showGrid)
-        return;
-
     this.gridGraphics.beginFill(0xFF3300);
     this.gridGraphics.lineStyle(1, 0x0, 0.3);
     // draw grid
@@ -347,8 +427,12 @@ LevelEditor.prototype.render = function () {
     if(!this.loaded)
         return;
 
-    this.levelRenderer.refresh(this.viewPort);
+    if(this.refreshTiles)
+        this.levelRenderer.refresh(this.viewPort);
+    this.refreshTiles = false;
+
     this.drawGrid();
+    this.drawSketches();
     this.drawSelectedTilesPreview();
     this.drawCursor();
     this.drawAnnotations();
@@ -405,6 +489,32 @@ LevelOperation.makeRemoveAnnotationOperation = function (index) {
     };
 };
 
+LevelOperation.makeMoveAnnotationOperation = function (index, x, y) {
+    return {
+        type: 'MoveAnnotationOperation',
+        index: index,
+        x: x,
+        y: y
+    };
+};
+
+LevelOperation.makeDrawSketchOperation = function (x1, y1, x2, y2) {
+    return {
+        type: 'DrawSketchOperation',
+        x1: x1,
+        y1: y1,
+        x2: x2,
+        y2: y2
+    };
+};
+
+LevelOperation.makeRemoveSketchOperation = function (index) {
+    return {
+        type: 'RemoveSketchOperation',
+        index: index
+    };
+};
+
 LevelOperation.makeAddAnnotationOperation = function (text, x, y) {
     return {
         type: 'AddAnnotationOperation',
@@ -418,7 +528,7 @@ function LevelRenderer(renderer, level) {
     this.renderer = renderer;
     this.level = level;
     this.container = new PIXI.Container();
-    // this.objectRenderer = new WorldObjectRenderer();
+    // this.objectRenderer = new LevelObjectRenderer();
     this.tileMapRenderer = new TileMapRenderer(this.renderer, this.level.tileMap);
 
     // set viewport and stage
@@ -427,10 +537,7 @@ function LevelRenderer(renderer, level) {
 }
 
 LevelRenderer.prototype.refresh = function (viewPort) {
-
     this.tileMapRenderer.refresh(viewPort);
-    this.refreshTiles = false;
-
     // this.objectRenderer.refresh(viewPort);
 };
 
@@ -440,6 +547,8 @@ function Mouse() {
     this.y = 0;
     this.prevX = 0;
     this.prevY = 0;
+    this.dx = 0;
+    this.dy = 0;
 }
 
 Mouse.prototype.set = function (x, y) {
@@ -447,6 +556,11 @@ Mouse.prototype.set = function (x, y) {
     this.prevY = this.y;
     this.x = x;
     this.y = y;
+};
+
+Mouse.prototype.setDir = function (dx, dy) {
+    this.dx = dx;
+    this.dy = dy;
 };
 
 Mouse.prototype.hasMoved = function () {

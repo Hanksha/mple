@@ -1,0 +1,29 @@
+<div class="modal-header">
+  <button type="button" class="close" ng-click="cancel()" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+  <h4 class="modal-title">Admin Panel</h4>
+</div>
+<div class="modal-body">
+  <div class="row">
+    <div class="col-lg-12">
+      <div class="panel panel-default">
+        <button type="button" class="btn btn-danger btn-s pull-right small-button" ng-click="deleteUser()"
+                tooltip-placement="bottom" uib-tooltip="Delete">
+          <span class="fa fa-trash" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="btn btn-success btn-s pull-right small-button" ng-click="addUser()"
+                tooltip-placement="bottom" uib-tooltip="Add">
+          <span class="fa fa-plus" aria-hidden="true"></span>
+        </button>
+        <div class="panel-heading">Users</div>
+        <div class="panel-body">
+          <ul class="list-group">
+            <li class="list-group-item"
+                ng-repeat="username in users"
+                ng-click="selectUser(username)"
+                ng-class="{active: selectedUser == username}">{{username}}</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

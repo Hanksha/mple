@@ -2,6 +2,7 @@ package com.hanksha.mple.service.auth.impl
 
 import com.hanksha.mple.data.UserRepository
 import com.hanksha.mple.data.model.message.AlertMessage
+import com.hanksha.mple.service.RoomManager
 import com.hanksha.mple.service.auth.UserService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.messaging.simp.SimpMessagingTemplate
@@ -26,7 +27,10 @@ class UserServiceImpl implements UserService {
     @Autowired
     SessionRegistry sessionRegistry
 
-    List<User> getAllUsers() {
+    @Autowired
+    RoomManager roomManager
+
+    List<User> getAllActiveUsers() {
         sessionRegistry.allPrincipals.findAll{
             User user = (User) it
             !sessionRegistry.getAllSessions(user, false).isEmpty()
@@ -49,6 +53,7 @@ class UserServiceImpl implements UserService {
         String username = authentication?authentication.name:'anonymous'
         AlertMessage alertMessage = new AlertMessage(message: "$username just logged out", type: 'info')
         messaging.convertAndSend('/topic/alerts', alertMessage)
+        roomManager.disconnectUser(username)
         response.setStatus(HttpServletResponse.SC_OK)
     }
 }

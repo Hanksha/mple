@@ -18,6 +18,10 @@ class JdbcUserRoleRepository implements UserRoleRepository {
         jdbc.query('SELECT role from user_roles WHERE username = ?', new UserRoleRowMapper(), username)
     }
 
+    void save(String username, String role) {
+        jdbc.update('INSERT INTO user_roles VALUES (default, ?, ?)', username, role)
+    }
+
     private class UserRoleRowMapper implements RowMapper<String> {
         String mapRow(ResultSet rs, int rowNum) throws SQLException {
             rs.getString('role')
