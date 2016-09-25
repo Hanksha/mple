@@ -15,20 +15,8 @@ TileMap.prototype.getTileId = function (layerIndex, row, col) {
 
 TileMap.prototype.insertLayer = function (index, name) {
 
-    var grid = [];
-
-    for(var row = 0; row < this.height; row++) {
-        var array = [];
-
-        for(var col = 0; col < this.width; col++) {
-            array.push(0);
-        }
-
-        grid.push(array);
-    }
-
     this.layers.splice(index, 0, {
-        grid: grid,
+        grid: Array.makeArray(this.height, this.width),
         visible: true,
         name: name
     });

@@ -1,11 +1,11 @@
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
   username VARCHAR(45) NOT NULL,
   password VARCHAR(45) NOT NULL,
   enabled TINYINT NOT NULL DEFAULT 1,
   PRIMARY KEY (username)
 );
 
-CREATE TABLE  user_roles (
+CREATE TABLE IF NOT EXISTS user_roles (
   user_role_id INT NOT NULL AUTO_INCREMENT,
   username VARCHAR(45) NOT NULL,
   role VARCHAR(45) NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE  user_roles (
   CONSTRAINT user_role_username FOREIGN KEY (username) REFERENCES users (username) ON DELETE SET NULL
 );
 
-CREATE TABLE tilesets (
+CREATE TABLE IF NOT EXISTS tilesets (
   id INT NOT NULL AUTO_INCREMENT,
   name VARCHAR(45) NOT NULL UNIQUE,
   date_created DATE NOT NULL,
@@ -27,7 +27,7 @@ CREATE TABLE tilesets (
   PRIMARY KEY (id)
 );
 
-CREATE TABLE projects (
+CREATE TABLE IF NOT EXISTS projects (
   id INT NOT NULL AUTO_INCREMENT,
   name VARCHAR(45) NOT NULL,
   date_created DATE NOT NULL,
@@ -36,7 +36,7 @@ CREATE TABLE projects (
   CONSTRAINT project_user FOREIGN KEY (owner) REFERENCES users (username) ON DELETE SET NULL ON UPDATE CASCADE
 );
 
-CREATE TABLE levels (
+CREATE TABLE IF NOT EXISTS levels (
   project_id INT NOT NULL,
   id INT NOT NULL AUTO_INCREMENT,
   name VARCHAR (45) NOT NULL,

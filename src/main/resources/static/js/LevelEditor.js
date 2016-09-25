@@ -66,6 +66,18 @@ function LevelEditor($routeParams, $log, hotkeys, $location, $uibModal,
             self.viewPort.y += 10;
         }
     });
+    hotkeys.add({
+        combo: 'shift+f',
+        callback: function() {
+            self.flipHTiles();
+        }
+    });
+    hotkeys.add({
+        combo: 'shift+v',
+        callback: function() {
+            self.flipVTiles();
+        }
+    });
 
     EventService.subscribe('tileset-loaded', function (event) {
         if(event.message)
@@ -222,6 +234,54 @@ LevelEditor.prototype.removeSketchLine = function (index) {
 LevelEditor.prototype.selectTool = function (name) {
     this.toolOptions = {};
     this.activeTool = this.tools.getTool(name);
+};
+
+LevelEditor.prototype.flipHTiles = function () {
+
+    var temp = Array.makeArray(this.selectedTiles.length,this.selectedTiles[0].length);
+
+    var c = 0;
+    for(var row = 0; row < this.selectedTiles.length; row++) {
+        c = temp[0].length - 1;
+        for(var col = 0; col < this.selectedTiles[0].length; col++) {
+            if(this.selectedTiles[row][col] != 0)
+                this.selectedTiles[row][col] = Tile.flipH(this.selectedTiles[row][col]);
+            temp[row][c] = this.selectedTiles[row][col];
+            c--;
+        }
+    }
+
+    this.selectedTiles = temp;
+    console.log(this.selectedTiles);
+};
+
+LevelEditor.prototype.flipVTiles = function () {
+
+    var temp = Array.makeArray(this.selectedTiles.length,this.selectedTiles[0].length);
+
+    var r = temp.length - 1;
+    for(var row = 0; row < this.selectedTiles.length; row++) {
+        for(var col = 0; col < this.selectedTiles[0].length; col++) {
+            if(this.selectedTiles[row][col] != 0)
+                this.selectedTiles[row][col] = Tile.flipV(this.selectedTiles[row][col]);
+            temp[r][col] = this.selectedTiles[row][col];
+        }
+        r--;
+    }
+
+    this.selectedTiles = temp;
+};
+
+LevelEditor.prototype.rotateTiles = function () {
+    var self = this;
+
+    var temp = this.selectedTiles[0].map(function(col, i) {
+        return self.selectedTiles.map(function(row) {
+            return Tile.rotate(row[i]);
+        });
+    });
+
+    this.selectedTiles = temp;
 };
 
 /* Mouse event functions */
@@ -403,10 +463,24 @@ LevelEditor.prototype.drawSelectedTilesPreview = function () {
             if(this.selectedTiles[row][col] == 0)
                 continue;
 
-            var tile = PIXI.Sprite.fromFrame(this.selectedTiles[row][col].toString());
-            tile.alpha = 0.3;
+            var rawId = this.selectedTiles[row][col];
+            var tileId = Tile.getTileID(rawId).toString();
+            var tile = PIXI.Sprite.fromFrame(tileId);
+
             tile.position.x = (startCol + col) * this.tileMap.tileWidth;
             tile.position.y = (startRow + row) * this.tileMap.tileHeight;
+            if(Tile.isFlipH(rawId)) {
+                tile.scale.x = -1;
+                tile.position.x += this.tileMap.tileWidth;
+            }
+            if(Tile.isFlipV(rawId)) {
+                tile.scale.y = -1;
+                tile.position.y += this.tileMap.tileHeight;
+            }
+            if(Tile.isRotate(rawId))
+                tile.rotation = -1.5708;
+
+            tile.alpha = 0.3;
 
             this.selectedTilesPreview.addChild(tile);
         }
@@ -592,3 +666,57 @@ function ViewPort() {
     this.y = 0;
     this.scale = 1;
 }
+
+function Tile() {}
+
+/* Tile transformation */
+Tile.BITMASK_FLIPH = 0x80000000;
+Tile.BITMASK_FLIPV = 0x40000000;
+Tile.BITMASK_ROTATED = 0x20000000;
+
+Tile.getTileID = function(tile) {
+    tile <<= 3;
+    tile >>>= 3;
+
+    return tile;
+};
+
+Tile.isFlipH = function (tile) {
+    return  ((tile & Tile.BITMASK_FLIPH) == -Tile.BITMASK_FLIPH);
+};
+
+Tile.isFlipV = function (tile) {
+    return  ((tile & Tile.BITMASK_FLIPV) == Tile.BITMASK_FLIPV);
+};
+
+Tile.isRotate = function (tile) {
+    return  ((tile & Tile.BITMASK_ROTATED) == Tile.BITMASK_ROTATED);
+};
+
+
+Tile.flipH = function (tile) {
+    return tile ^ Tile.BITMASK_FLIPH;
+};
+
+Tile.flipV = function (tile) {
+    return tile ^ Tile.BITMASK_FLIPV;
+};
+
+Tile.rotate = function (tile) {
+    return tile ^ Tile.BITMASK_ROTATED;
+};
+
+Array.makeArray = function(numRow, numCol) {
+    var temp = [];
+    for(var row = 0; row < numRow; row++) {
+        var array = [];
+
+        for(var col = 0; col < numCol; col++) {
+            array.push(0);
+        }
+
+        temp.push(array);
+    }
+
+    return temp;
+};

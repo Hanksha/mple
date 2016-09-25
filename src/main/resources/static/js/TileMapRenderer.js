@@ -24,9 +24,26 @@ TileMapRenderer.prototype.refresh = function (viewPort) {
             for(var col = startCol; col < endCol; col++) {
                 if(layer.grid[row][col] == 0)
                     continue;
-                var tile = PIXI.Sprite.fromFrame(layer.grid[row][col].toString());
+
+                var rawId = layer.grid[row][col];
+                var tileId = Tile.getTileID(rawId).toString();
+
+                var tile = PIXI.Sprite.fromFrame(tileId);
+
                 tile.position.x = col * this.tileMap.tileWidth;
                 tile.position.y = row * this.tileMap.tileHeight;
+
+                if(Tile.isFlipH(rawId)) {
+                    tile.scale.x = -1;
+                    tile.position.x += this.tileMap.tileWidth;
+                }
+                if(Tile.isFlipV(rawId)) {
+                    tile.scale.y = -1;
+                    tile.position.y += this.tileMap.tileHeight;
+                }
+                if(Tile.isRotate(rawId))
+                    tile.rotation = -1.5708;
+                
                 this.container.addChild(tile);
             }
         }
