@@ -6,7 +6,7 @@
 	<groupId>com.hanksha</groupId>
 	<artifactId>mple</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<packaging>war</packaging>
+	<packaging>jar</packaging>
 
 	<name>mple</name>
 	<description>Mithril Pants Level Editor</description>
