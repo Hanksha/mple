@@ -22,13 +22,13 @@ TileMapRenderer.prototype.refresh = function (viewPort) {
 
         for(var row = startRow; row < endRow; row++) {
             for(var col = startCol; col < endCol; col++) {
-                if(layer.grid[row][col] == 0)
+                var rawId = layer.grid[row][col];
+                var tileId = Tile.getTileID(rawId);
+
+                if(tileId == 0)
                     continue;
 
-                var rawId = layer.grid[row][col];
-                var tileId = Tile.getTileID(rawId).toString();
-
-                var tile = PIXI.Sprite.fromFrame(tileId);
+                var tile = PIXI.Sprite.fromFrame(tileId.toString());
 
                 tile.position.x = col * this.tileMap.tileWidth;
                 tile.position.y = row * this.tileMap.tileHeight;
@@ -43,7 +43,7 @@ TileMapRenderer.prototype.refresh = function (viewPort) {
                 }
                 if(Tile.isRotate(rawId))
                     tile.rotation = -1.5708;
-                
+
                 this.container.addChild(tile);
             }
         }

@@ -460,12 +460,13 @@ LevelEditor.prototype.drawSelectedTilesPreview = function () {
 
     for(var row = 0; row < this.selectedTiles.length; row++) {
         for(var col = 0; col < this.selectedTiles[0].length; col++) {
-            if(this.selectedTiles[row][col] == 0)
+            var rawId = this.selectedTiles[row][col];
+            var tileId = Tile.getTileID(rawId);
+
+            if(tileId == 0)
                 continue;
 
-            var rawId = this.selectedTiles[row][col];
-            var tileId = Tile.getTileID(rawId).toString();
-            var tile = PIXI.Sprite.fromFrame(tileId);
+            var tile = PIXI.Sprite.fromFrame(tileId.toString());
 
             tile.position.x = (startCol + col) * this.tileMap.tileWidth;
             tile.position.y = (startRow + row) * this.tileMap.tileHeight;

@@ -103,8 +103,8 @@ class RoomManager {
     }
 
     void disconnectUser(String username) {
-        for(room in rooms)
-            room.users.removeAll({it == username})
+        for(int i = 0; i < rooms.size(); i++)
+            disconnectFromRoom(rooms[i].id, username)
     }
 
     void disconnectFromRoom(int roomId, String username) {
@@ -112,6 +112,9 @@ class RoomManager {
 
         if(!room)
             throw new RoomNotFoundException(roomId)
+
+        if(!room.users.any {it == username})
+            return
 
         room.users.removeAll {it == username}
 
