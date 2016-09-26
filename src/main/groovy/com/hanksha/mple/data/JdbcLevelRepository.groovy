@@ -1,6 +1,5 @@
 package com.hanksha.mple.data
 
-import com.hanksha.mple.data.model.Level
 import com.hanksha.mple.data.model.LevelMeta
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.EmptyResultDataAccessException

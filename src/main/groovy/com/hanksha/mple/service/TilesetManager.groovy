@@ -22,6 +22,9 @@ class TilesetManager {
 
     @PostConstruct
     void init() {
+        if(!Files.exists(Paths.get('storage')))
+            Files.createDirectory(Paths.get('storage'))
+
         if(!Files.exists(Paths.get(ROOT_TILESET_FOLDER)))
             Files.createDirectory(Paths.get(ROOT_TILESET_FOLDER))
     }

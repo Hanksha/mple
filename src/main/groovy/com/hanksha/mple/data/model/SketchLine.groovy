@@ -3,7 +3,7 @@ package com.hanksha.mple.data.model
 import com.fasterxml.jackson.annotation.JsonProperty
 import groovy.transform.Canonical
 
-import java.awt.Point
+import java.awt.*
 
 @Canonical
 class SketchLine {

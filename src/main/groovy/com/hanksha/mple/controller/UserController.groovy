@@ -9,14 +9,9 @@ import groovy.json.JsonOutput
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
+import javax.annotation.PostConstruct
 import java.security.Principal
 
 @RestController
@@ -28,6 +23,15 @@ class UserController {
 
     @Autowired
     UserRoleRepository userRoleRepo
+
+    @PostConstruct
+    void init() {
+        if(!userRepo.findOne('admin')) {
+            userRepo.save(new User(name: 'admin', password: 'Aseft1357', enabled: true))
+            userRoleRepo.save('admin', 'ROLE_ADMIN')
+            userRoleRepo.save('admin', 'ROLE_USER')
+        }
+    }
 
     @PostMapping('/{username}')
     ResponseEntity changePassword(@PathVariable String username, @RequestBody ChangePasswordRequest request, Principal user) {

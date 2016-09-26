@@ -87,7 +87,7 @@ app.run(function (Tools) {
         'Sketching Tool',
         'pencil-square-o',
         handle,
-        'plugins/basic-tools/templates/sketcher-options.html'
+        'js/templates/sketcher-options.html'
     );
 
     function handle(event, editor) {
@@ -158,7 +158,7 @@ app.run(function (Tools) {
         'Annotation Tool',
         'commenting',
         handle,
-        'plugins/basic-tools/templates/annotater-options.html'
+        'js/templates/annotater-options.html'
     );
 
     function handle(event, editor) {
@@ -167,7 +167,7 @@ app.run(function (Tools) {
 
         if(editor.toolOptions == 'add') {
             editor.uibModal.open({
-                templateUrl: 'plugins/basic-tools/templates/addAnnotationModal.html',
+                templateUrl: 'js/templates/addAnnotationModal.html',
                 size: 'sm',
                 controller: function ($scope, $uibModalInstance) {
                     $scope.text = '';

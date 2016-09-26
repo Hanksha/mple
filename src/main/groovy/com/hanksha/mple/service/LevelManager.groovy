@@ -129,6 +129,34 @@ class LevelManager {
         git.close()
     }
 
+    void importLevel(String projectName, String levelSrc) {
+        Project project = projectRepo.findOne(projectName)
+
+        if(!project)
+            throw new ProjectNotFoundException(projectName)
+
+        Level level = objectMapper.readValue(levelSrc.decodeBase64(), Level)
+
+        if(levelRepo.findOne(project.id, level.name))
+            throw new LevelAlreadyExistsException(projectName, level.name)
+
+        levelRepo.save(new LevelMeta(projectId: project.id, name: level.name, dateCreated: new Date()))
+
+        File folder = FileUtils.getFile(new File(ProjectManager.ROOT_PROJECT_FOLDER), projectName)
+
+        objectMapper.writeValue(FileUtils.getFile(folder, level.name + '.json'), level)
+
+        Git git = Git.open(folder)
+
+        String author = SecurityContextHolder.context.authentication.name
+
+        // stage level file
+        git.add().addFilepattern(level.name + '.json').call()
+        // commit file
+        git.commit().setAuthor(author, '').setMessage("Added level ${level.name}").call()
+        git.close()
+    }
+
     void deleteLevel(String projectName, String levelName) {
         Project project = projectRepo.findOne(projectName)
 

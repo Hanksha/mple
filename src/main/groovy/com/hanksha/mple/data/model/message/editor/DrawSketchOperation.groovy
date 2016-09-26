@@ -4,7 +4,7 @@ import com.hanksha.mple.data.model.Level
 import com.hanksha.mple.data.model.SketchLine
 import groovy.transform.Canonical
 
-import java.awt.Point
+import java.awt.*
 
 @Canonical
 class DrawSketchOperation implements LevelOperation {

@@ -1,6 +1,5 @@
 package com.hanksha.mple.service
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.hanksha.mple.data.LevelRepository
 import com.hanksha.mple.data.ProjectRepository
 import com.hanksha.mple.data.UserRoleRepository
@@ -14,7 +13,6 @@ import com.hanksha.mple.exception.ProjectPermissionDeniedException
 import org.apache.commons.io.FileUtils
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.diff.DiffEntry
-import org.eclipse.jgit.lib.AnyObjectId
 import org.eclipse.jgit.lib.ObjectId
 import org.eclipse.jgit.lib.ObjectReader
 import org.eclipse.jgit.revwalk.RevCommit
@@ -48,6 +46,9 @@ class ProjectManager {
 
     @PostConstruct
     void init() {
+        if(!Files.exists(Paths.get('storage')))
+            Files.createDirectory(Paths.get('storage'))
+
         if(!Files.exists(Paths.get(ROOT_PROJECT_FOLDER)))
             Files.createDirectory(Paths.get(ROOT_PROJECT_FOLDER))
     }

@@ -7,10 +7,22 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType
 
+import javax.annotation.PostConstruct
 import javax.sql.DataSource
+import java.nio.file.Files
+import java.nio.file.Paths
 
 @Configuration
 class DataConfig {
+
+    @PostConstruct
+    void init() {
+        if(!Files.exists(Paths.get('storage')))
+            Files.createDirectory(Paths.get('storage'))
+
+        if(!Files.exists(Paths.get('storage/database')))
+            Files.createDirectory(Paths.get('storage/database'))
+    }
 
     @Bean
     @Profile('dev')

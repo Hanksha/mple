@@ -2,41 +2,25 @@ package com.hanksha.mple
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.hanksha.mple.data.ProjectRepository
-import com.hanksha.mple.data.model.message.editor.LevelOperation
-import com.hanksha.mple.data.model.message.editor.TileOperation
 import com.hanksha.mple.service.ProjectManager
-import groovy.json.JsonOutput
-import org.apache.commons.io.FileUtils
 import org.junit.After
 import org.junit.Before
 import org.junit.FixMethodOrder
 import org.junit.Ignore
-import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.MethodSorters
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.http.MediaType
-import org.springframework.security.authentication.AuthenticationProvider
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.test.context.junit4.SpringRunner
 import org.springframework.test.context.web.WebAppConfiguration
 import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.RequestPostProcessor
 import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import org.springframework.web.context.WebApplicationContext
 
-import java.nio.file.Files
-import java.nio.file.Paths
-
-import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.*
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.hamcrest.Matchers.*
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity
 
 @RunWith(SpringRunner)
 @FixMethodOrder(MethodSorters.JVM)

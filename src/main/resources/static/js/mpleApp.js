@@ -191,7 +191,7 @@
         $scope.refresh();
     });
 
-    app.controller('ProjectDetailsCtrl', function ($scope, $routeParams, $uibModal, $log,
+    app.controller('ProjectDetailsCtrl', function ($scope, $routeParams, $uibModal, $log, $base64,
                                                    ProjectService, LevelService, TilesetService,
                                                    AlertService, ErrorFormatter, RoomService) {
 
@@ -325,6 +325,45 @@
             })[0].click();
 
             anchor.remove();
+        };
+
+        $scope.import = function () {
+            $uibModal.open({
+                templateUrl: 'js/templates/importModal.html',
+                size: 'sm',
+                scope: $scope,
+                controller: function ($scope, $uibModalInstance) {
+                    $scope.cancel = function () { $uibModalInstance.dismiss(); };
+
+                    $scope.levelSrc = null;
+
+                    $scope.setFile = function(name, file) {
+                        var reader = new FileReader();
+
+                        reader.onload = function (readerEvt) {
+                            $scope.levelSrc = $base64.encode(readerEvt.target.result);
+                        };
+
+                        reader.readAsBinaryString(file);
+                    };
+
+                    $scope.importLevel = function () {
+                        if($scope.levelSrc == null)
+                            return;
+
+                        LevelService.importLevel($routeParams.name, $scope.levelSrc)
+                            .success(function (data) {
+                                AlertService.addPopUpAlert('Success', 'Level imported', 'success');
+                                $scope.refresh();
+                                $uibModalInstance.close();
+                            })
+                            .error(function (data) {
+                                AlertService.addPopUpAlert('Error', ErrorFormatter.format(data), 'danger');
+                            })
+                    };
+
+                }
+            });
         };
         
         $scope.revert = function () {
@@ -678,7 +717,8 @@
             getLevel: getLevel,
             listLevels: listLevels,
             createLevel: createLevel,
-            deleteLevel: deleteLevel
+            deleteLevel: deleteLevel,
+            importLevel: importLevel
         };
 
         function getLevel(projectName, levelName, version) {
@@ -700,6 +740,11 @@
         function deleteLevel(projectName, levelName) {
             return $http.delete('/api/projects/' + projectName + '/levels/' + levelName);
         }
+
+        function importLevel(projectName, levelSrc) {
+            return $http.post('/api/projects/' + projectName + '/levels/import', levelSrc);
+        }
+
     });
     
     app.factory('RoomService', function ($http) {
