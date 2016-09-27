@@ -2,8 +2,6 @@ package com.hanksha.mple.controller
 
 import com.hanksha.mple.data.TilesetRepository
 import com.hanksha.mple.data.model.Tileset
-import com.hanksha.mple.exception.TilesetAlreadyExistsException
-import com.hanksha.mple.exception.TilesetNotFoundException
 import com.hanksha.mple.service.TilesetManager
 import groovy.json.JsonOutput
 import org.springframework.beans.factory.annotation.Autowired
@@ -26,38 +24,24 @@ class TilesetController {
     @GetMapping('')
     ResponseEntity listTilesets() {
         List<Tileset> tilesetList = tilesetRepo.findAll()
-
         new ResponseEntity(tilesetList, HttpStatus.OK)
     }
 
     @GetMapping('/{name}')
     ResponseEntity getTileset(@PathVariable String name) {
-        try {
-            Tileset tileset = tilesetManager.getTileset(name)
-            new ResponseEntity(tileset, HttpStatus.OK)
-        } catch(TilesetNotFoundException ex) {
-            return new ResponseEntity(JsonOutput.toJson(ex.message), HttpStatus.NOT_FOUND)
-        }
+        Tileset tileset = tilesetManager.getTileset(name)
+        new ResponseEntity(tileset, HttpStatus.OK)
     }
 
     @PostMapping('')
     ResponseEntity createTileset(@Valid @RequestBody Tileset tileset) {
-        try {
-            tilesetManager.createTileset(tileset)
-        } catch(TilesetAlreadyExistsException ex) {
-            return new ResponseEntity(JsonOutput.toJson(ex.message), HttpStatus.CONFLICT)
-        }
-
+        tilesetManager.createTileset(tileset)
         new ResponseEntity(JsonOutput.toJson('Tileset created'), HttpStatus.OK)
     }
 
     @DeleteMapping('/{name}')
     ResponseEntity deleteTileset(@PathVariable String name) {
-        try {
-            tilesetManager.deleteTileset(name)
-        } catch(TilesetNotFoundException ex) {
-            return new ResponseEntity(JsonOutput.toJson(ex.message), HttpStatus.NOT_FOUND)
-        }
+        tilesetManager.deleteTileset(name)
 
         new ResponseEntity(JsonOutput.toJson('Tileset deleted'), HttpStatus.OK)
     }
